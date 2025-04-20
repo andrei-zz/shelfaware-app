@@ -27,6 +27,7 @@
   "devDependencies": {
     "@react-router/dev": "^7.5.1",
     "@react-router/fs-routes": "^7.5.1",
+    "@tailwindcss/typography": "^0.5.16",
     "@tailwindcss/vite": "^4.1.4",
     "@types/compression": "^1.7.5",
     "@types/express": "^5.0.1",
