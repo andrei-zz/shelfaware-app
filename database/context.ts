@@ -1,11 +1,11 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
-import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import type { NeonHttpDatabase } from "drizzle-orm/neon-http";
 
 import * as schema from "./schema";
 
 export const DatabaseContext = new AsyncLocalStorage<
-  PostgresJsDatabase<typeof schema>
+  NeonHttpDatabase<typeof schema>
 >();
 
 export function database() {
