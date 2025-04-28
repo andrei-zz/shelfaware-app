@@ -7,6 +7,7 @@ import {
   boolean,
   timestamp,
   varchar,
+  pgEnum,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -23,21 +24,24 @@ export const items = pgTable("items", {
   name: text("name").notNull(),
   description: text("description"),
   imageBase64: text("image_base64"),
+  expirationDate: timestamp("expiration_date"),
   originalWeight: real("original_weight"),
   currentWeight: real("current_weight"),
-  age: integer("age"),
   itemTypeId: integer("item_type_id").references(() => itemTypes.id),
   isPresent: boolean("is_present").default(true),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
   deletedAt: timestamp("deleted_at"),
 });
+
+export const eventTypeEnum = pgEnum("event_type", ["in", "out", "moved"]);
 
 export const itemEvents = pgTable("item_events", {
   id: serial("id").primaryKey(),
   itemId: integer("item_id")
     .references(() => items.id)
     .notNull(),
-  eventType: varchar("event_type", { length: 10 }).notNull(),
+  eventType: eventTypeEnum("event_type").notNull(),
   timestamp: timestamp("timestamp").defaultNow(),
   weight: real("weight"),
 });
@@ -49,20 +53,21 @@ export const tags = pgTable("tags", {
   itemId: integer("item_id").references(() => items.id, {
     onDelete: "set null",
   }),
+  createdAt: timestamp("created_at").defaultNow(),
   attachedAt: timestamp("attached_at").defaultNow(),
 });
 
-// export type InsertItemTypes = typeof itemTypes.$inferInsert;
-// export type SelectItemTypes = typeof itemTypes.$inferSelect;
+export type InsertItemTypes = typeof itemTypes.$inferInsert;
+export type SelectItemTypes = typeof itemTypes.$inferSelect;
 
-// export type InsertItems = typeof items.$inferInsert;
-// export type SelectItems = typeof items.$inferSelect;
+export type InsertItems = typeof items.$inferInsert;
+export type SelectItems = typeof items.$inferSelect;
 
-// export type InsertItemEvents = typeof itemEvents.$inferInsert;
-// export type SelectItemEvents = typeof itemEvents.$inferSelect;
+export type InsertItemEvents = typeof itemEvents.$inferInsert;
+export type SelectItemEvents = typeof itemEvents.$inferSelect;
 
-// export type InsertTags = typeof tags.$inferInsert;
-// export type SelectTags = typeof tags.$inferSelect;
+export type InsertTags = typeof tags.$inferInsert;
+export type SelectTags = typeof tags.$inferSelect;
 
 // Relations
 
