@@ -6,10 +6,11 @@ import path from "path";
 
 // Short-circuit the type-checking of the built output.
 const matches = globSync("./build/server/nodejs_*/index.js");
-if (matches.length !== 1) {
-  throw new Error(`Expected exactly one server build, found ${matches.length}`);
+if (matches.length !== 0 && matches.length !== 1) {
+  throw new Error(`Expected at most one server build, found ${matches.length}`);
 }
-const BUILD_PATH = path.resolve(matches[0]);
+const BUILD_PATH =
+  matches.length === 0 ? "./build/server/index.js" : path.resolve(matches[0]);
 
 const DEVELOPMENT = process.env.NODE_ENV === "development";
 const PORT = Number.parseInt(process.env.PORT || "3000");

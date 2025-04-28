@@ -7,17 +7,9 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  useLoaderData,
 } from "react-router";
-import {
-  ThemeProvider,
-  useTheme,
-  PreventFlashOnWrongTheme,
-  Theme,
-} from "remix-themes";
 
 import "./app.css";
-import { themeSessionResolver } from "./sessions.server";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -32,31 +24,16 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-  // Return the theme from the session storage using the loader
-  const { getTheme } = await themeSessionResolver(request);
-  return {
-    theme: getTheme(),
-  };
-};
+// export const loader = async ({ request }: Route.LoaderArgs) => {
+//   return {};
+// };
 
-const AppLayout = ({
-  loaderTheme,
-  theme,
-  children,
-}: {
-  loaderTheme?: Route.ComponentProps["loaderData"]["theme"];
-  theme?: Theme | null;
-  children: React.ReactNode;
-}) => (
-  <html lang="en" data-theme={theme ?? "dark"}>
+const AppLayout = ({ children }: { children: React.ReactNode }) => (
+  <html lang="en">
     <head>
       <meta charSet="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <Meta />
-      {loaderTheme !== undefined && theme !== undefined ? (
-        <PreventFlashOnWrongTheme ssrTheme={Boolean(loaderTheme)} />
-      ) : null}
       <Links />
     </head>
     <body>
@@ -68,15 +45,10 @@ const AppLayout = ({
 );
 
 const App = () => {
-  // Use the theme in your app.
-  // If the theme is missing in session storage, PreventFlashOnWrongTheme will get
-  // the browser theme before hydration and will prevent a flash in browser.
-  // The client code runs conditionally, it won't be rendered if we have a theme in session storage.
-  const loaderData = useLoaderData<typeof loader>();
-  const [theme] = useTheme();
+  // const loaderData = useLoaderData<typeof loader>();
 
   return (
-    <AppLayout loaderTheme={loaderData.theme} theme={theme}>
+    <AppLayout>
       <Outlet />
     </AppLayout>
   );
@@ -84,15 +56,11 @@ const App = () => {
 
 const AppWithProviders = ({ loaderData }: Route.ComponentProps) => {
   return (
-    // Wrap your app with ThemeProvider.
-    // `specifiedTheme` is the stored theme in the session storage.
-    // `themeAction` is the action name that's used to change the theme in the session storage.
-    <ThemeProvider
-      specifiedTheme={loaderData.theme}
-      themeAction="/action/set-theme"
-    >
-      <App />
-    </ThemeProvider>
+    // <Provider
+    //   data={data}
+    // >
+    <App />
+    // </Provider>
   );
 };
 export default AppWithProviders;
