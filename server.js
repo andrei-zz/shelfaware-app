@@ -1,5 +1,5 @@
-import compression from "compression";
 import express from "express";
+import compression from "compression";
 import morgan from "morgan";
 
 // Short-circuit the type-checking of the built output.
