@@ -9,6 +9,12 @@ export const meta = ({}: Route.MetaArgs) => {
   ];
 };
 
+// export function headers(_: Route.HeadersArgs) {
+//   return {
+//     "Cache-Control": "s-maxage=1, stale-while-revalidate=59",
+//   };
+// }
+
 export const loader = ({ context }: Route.LoaderArgs) => {
   return { message: context.VALUE_FROM_EXPRESS };
 };

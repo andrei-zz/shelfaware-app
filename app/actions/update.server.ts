@@ -1,11 +1,11 @@
 import { eq, sql } from "drizzle-orm";
-import { db } from "~/../server/db";
+import { db } from "~/database/db.server";
 import {
   type InsertItems,
   type InsertTags,
   items,
   tags,
-} from "~/../database/schema";
+} from "~/database/schema";
 
 export const updateItem = async (
   itemId: number,

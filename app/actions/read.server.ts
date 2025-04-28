@@ -1,12 +1,12 @@
 import { asc, eq, inArray, lt } from "drizzle-orm";
-import { db } from "~/../server/db";
+import { db } from "~/database/db.server";
 import {
   type SelectItemTypes,
   items,
   itemTypes,
   itemEvents,
   tags,
-} from "~/../database/schema";
+} from "~/database/schema";
 
 // Build full type hierarchy
 export const getAllItemTypes = async () => {

@@ -1,9 +1,16 @@
-import compression from "compression";
 import express from "express";
+import compression from "compression";
 import morgan from "morgan";
+import { globSync } from "glob";
+import path from "path";
 
 // Short-circuit the type-checking of the built output.
-const BUILD_PATH = "./build/server/index.js";
+const matches = globSync("./build/server/nodejs_*/index.js");
+if (matches.length !== 1) {
+  throw new Error(`Expected exactly one server build, found ${matches.length}`);
+}
+const BUILD_PATH = path.resolve(matches[0]);
+
 const DEVELOPMENT = process.env.NODE_ENV === "development";
 const PORT = Number.parseInt(process.env.PORT || "3000");
 

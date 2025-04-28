@@ -1,8 +1,9 @@
 import "react-router";
 import { createRequestHandler } from "@react-router/express";
 import express from "express";
-import { DatabaseContext } from "database/context";
-import { db } from "./db";
+
+// @ts-expect-error - virtual module provided by React Router at build time
+import * as build from "virtual:react-router/server-build";
 
 declare module "react-router" {
   interface AppLoadContext {
@@ -12,12 +13,9 @@ declare module "react-router" {
 
 export const app = express();
 
-app.use((_, __, next) => DatabaseContext.run(db, next));
-
 app.use(
   createRequestHandler({
-    // @ts-expect-error - virtual module provided by React Router at build time
-    build: () => import("virtual:react-router/server-build"),
+    build,
     getLoadContext() {
       return {
         VALUE_FROM_EXPRESS: "Hello from Express",

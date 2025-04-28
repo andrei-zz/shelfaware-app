@@ -1,4 +1,4 @@
-import { db } from "~/../server/db";
+import { db } from "~/database/db.server";
 import {
   type InsertItems,
   type InsertItemTypes,
@@ -8,7 +8,7 @@ import {
   itemTypes,
   itemEvents,
   tags,
-} from "~/../database/schema";
+} from "~/database/schema";
 
 export const createItem = async (
   data: Omit<InsertItems, "id" | "createdAt" | "updatedAt" | "deletedAt">
