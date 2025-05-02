@@ -7,46 +7,74 @@ import {
   tags,
 } from "~/database/schema";
 
+// Only fields that update only the items table are allowed here
 export const updateItem = async (
   itemId: number,
   data: Partial<
-    Omit<InsertItems, "id" | "createdAt" | "deletedAt" | "updatedAt">
+    Omit<
+      InsertItems,
+      | "id"
+      | "createdAt"
+      | "deletedAt"
+      | "updatedAt"
+      | "originalWeight"
+      | "currentWeight"
+      | "isPresent"
+    >
   >
 ) =>
   await db
     .update(items)
     .set({
       ...data,
-      updatedAt: sql`CURRENT_TIMESTAMP`,
+      updatedAt: sql`now()`,
     })
-    .where(eq(items.id, itemId))
-    .returning();
-
-// Update item weight (e.g., after partial consumption)
-export const updateItemWeight = async (itemId: number, newWeight: number) =>
-  await db
-    .update(items)
-    .set({ currentWeight: newWeight, updatedAt: sql`CURRENT_TIMESTAMP` })
     .where(eq(items.id, itemId))
     .returning();
 
 export const updateTag = async (
   tagId: number,
-  data: Partial<Omit<InsertTags, "id" | "uid" | "createdAt" | "attachedAt">>
-) => await db.update(tags).set(data).where(eq(tags.id, tagId)).returning();
+  data: Partial<Omit<InsertTags, "id" | "uid" | "createdAt">>
+) => {
+  const existing = await db
+    .select({ itemId: tags.itemId })
+    .from(tags)
+    .where(eq(tags.id, tagId))
+    .then((rows) => rows[0]);
 
-// Attach an existing tag to an item
-export const attachTagToItem = async (tagUid: string, itemId: number) =>
-  await db
-    .update(tags)
-    .set({ itemId, attachedAt: sql`CURRENT_TIMESTAMP` })
-    .where(eq(tags.uid, tagUid))
-    .returning();
+  if (!existing) {
+    throw new Error(`Tag with id ${tagId} not found`);
+  }
 
-// Detach a tag (set itemId to NULL)
-export const detachTag = async (tagUid: string) =>
-  await db
+  let attachedAt;
+  if (existing.itemId !== data.itemId) {
+    if (data.itemId == null) {
+      attachedAt = null;
+    } else {
+      attachedAt = sql`now()`;
+
+      // Update new item
+      await db
+        .update(items)
+        .set({ updatedAt: sql`now()` })
+        .where(eq(items.id, data.itemId));
+    }
+
+    // Update old item
+    if (existing.itemId != null) {
+      await db
+        .update(items)
+        .set({ updatedAt: sql`now()` })
+        .where(eq(items.id, existing.itemId));
+    }
+  }
+
+  return await db
     .update(tags)
-    .set({ itemId: null })
-    .where(eq(tags.uid, tagUid))
+    .set({
+      ...data,
+      ...(attachedAt !== undefined ? { attachedAt } : {}),
+    })
+    .where(eq(tags.id, tagId))
     .returning();
+};

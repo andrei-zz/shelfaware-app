@@ -3,12 +3,12 @@ import type { Route } from "./+types/route";
 import { z } from "zod";
 import { createInsertSchema } from "drizzle-zod";
 import { items } from "~/database/schema";
-import { createItem } from "~/actions/create.server";
+import { createItem } from "~/actions/insert.server";
 import {
   getItemFromId,
   getItemFromTagId,
   getItemFromUid,
-} from "~/actions/read.server";
+} from "~/actions/select.server";
 
 const insertItemSchema = createInsertSchema(items)
   .omit({

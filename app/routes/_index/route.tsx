@@ -1,5 +1,10 @@
-import { getCurrentItems } from "~/actions/read.server";
 import type { Route } from "./+types/route";
+import { Link } from "react-router";
+import { DateTime } from "luxon";
+import { Plus } from "lucide-react";
+import { getCurrentItems } from "~/actions/select.server";
+import { buttonVariants } from "~/components/ui/button";
+import { cn } from "~/lib/utils.client";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -62,16 +67,67 @@ export const loader = async ({}: Route.LoaderArgs) => {
   //     deletedAt: null,
   //   },
   // ];
-  // return { items: fakeCurrentItems };
+  // return {
+  //   items: [
+  //     ...fakeCurrentItems,
+  //     ...fakeCurrentItems,
+  //     ...fakeCurrentItems,
+  //     ...fakeCurrentItems,
+  //   ],
+  // };
 };
 
 const Home = ({ loaderData }: Route.ComponentProps) => {
+  const { items } = loaderData;
   return (
-    <main>
-      <h2>Your Fridge</h2>
-      <div className="flex flex-col items-center space-y-2">
-        {loaderData.items.map((item) => (
-          <pre className="bg-accent">{JSON.stringify(item, null, 2)}</pre>
+    <main className="p-4 flex flex-col space-y-4 prose prose-lg">
+      <div className="flex items-center justify-between">
+        <h2 className="mt-0 mb-0">Your Fridge</h2>
+        <Link
+          to="/create-item"
+          className={cn(
+            buttonVariants({
+              variant: "default",
+              size: "default",
+            }),
+            "no-underline"
+          )}
+        >
+          <Plus /> Create item
+        </Link>
+      </div>
+      <div className="flex flex-col space-y-2">
+        {items.map((item) => (
+          <div className="bg-accent text-foreground p-2 flex items-center space-x-2">
+            <div className="w-20 h-20">
+              {item.imageBase64 ? (
+                <img
+                  className="max-w-full contain-layout"
+                  src={item.imageBase64}
+                />
+              ) : (
+                <div className="h-full w-full bg-blue-500" />
+              )}
+            </div>
+            <div className="flex flex-col shrink-0">
+              <span>{item.name}</span>
+              <span className="text-sm font-light">{item.description}</span>
+              {!item.itemTypeId ? null : (
+                <span className="text-sm font-light">
+                  Type: {item.itemTypeId}
+                </span>
+              )}
+              <span className="text-sm font-light">
+                Expiration date:{" "}
+                {item.expireAt != null
+                  ? DateTime.fromMillis(item.expireAt).toLocaleString()
+                  : null}
+              </span>
+              <span className="text-sm font-light">
+                Weight: {item.currentWeight} g
+              </span>
+            </div>
+          </div>
         ))}
       </div>
     </main>
