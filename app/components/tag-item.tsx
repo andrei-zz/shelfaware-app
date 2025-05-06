@@ -1,0 +1,74 @@
+import { Paperclip, Tag } from "lucide-react";
+import { DateTime } from "luxon";
+import { NavLink, useNavigate } from "react-router";
+import type { getTag } from "~/actions/select.server";
+import { cn } from "~/lib/utils";
+import { CtxMenu } from "./ctx-menu";
+
+export const TagItem = ({
+  tag,
+}: {
+  tag: Awaited<ReturnType<typeof getTag>>;
+}) => {
+  const navigate = useNavigate();
+
+  if (tag == null) {
+    return null;
+  }
+
+  return (
+    <CtxMenu
+      asChild
+      features={["right-click", "long-press", "shift-enter"]}
+      dropdownItems={[
+        ...(tag.item == null
+          ? []
+          : [
+              {
+                label: "Edit item",
+                onSelect: () => navigate(`/item/${tag.item?.id}`),
+              },
+            ]),
+      ]}
+      className="p-2 no-underline"
+    >
+      <NavLink
+        to={`/tag/${tag.id}`}
+        className={({ isPending }) =>
+          cn(
+            "p-2 flex items-center space-x-2 rounded hover:bg-accent border no-underline",
+            isPending ? "opacity-60  pointer-events-none" : undefined
+          )
+        }
+      >
+        <div className="flex flex-col w-full grow">
+          <span>{tag.name}</span>
+          <span className="text-sm font-light">UID: {tag.uid}</span>
+          {tag.createdAt == null ? null : (
+            <span className="text-sm font-light">
+              Created at: {DateTime.fromMillis(tag.createdAt).toLocaleString()}
+            </span>
+          )}
+        </div>
+        {tag.item == null ? null : (
+          <div className="flex flex-col shrink-0 items-end">
+            <span className="text-sm font-light">
+              <Paperclip className="size-4 inline-block" /> {tag.item.name}
+            </span>
+            {tag.item.currentWeight == null ? null : (
+              <span className="text-sm font-light">
+                Weight: {tag.item.currentWeight} g
+              </span>
+            )}
+            {tag.attachedAt == null ? null : (
+              <span className="text-sm font-light">
+                Attached at:{" "}
+                {DateTime.fromMillis(tag.attachedAt).toLocaleString()}
+              </span>
+            )}
+          </div>
+        )}
+      </NavLink>
+    </CtxMenu>
+  );
+};
