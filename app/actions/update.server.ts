@@ -59,6 +59,14 @@ export const updateTag = async ({
 
   let attachedAt;
   if (existing.itemId !== data.itemId) {
+    // Update old item
+    if (existing.itemId != null) {
+      await db
+        .update(items)
+        .set({ updatedAt: sql`now()` })
+        .where(eq(items.id, existing.itemId));
+    }
+    
     if (data.itemId == null) {
       attachedAt = null;
     } else {
@@ -69,14 +77,6 @@ export const updateTag = async ({
         .update(items)
         .set({ updatedAt: sql`now()` })
         .where(eq(items.id, data.itemId));
-    }
-
-    // Update old item
-    if (existing.itemId != null) {
-      await db
-        .update(items)
-        .set({ updatedAt: sql`now()` })
-        .where(eq(items.id, existing.itemId));
     }
   }
 

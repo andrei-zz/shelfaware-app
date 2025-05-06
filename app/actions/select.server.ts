@@ -64,7 +64,10 @@ export const getItemByUid = async (tagUid: string) => {
   return tag?.item;
 };
 
-export const getItems = async (conditions?: SQLWrapper[], orderBy?: SQL) =>
+export const getItems = async (
+  conditions?: SQLWrapper[],
+  orderBy: SQL = desc(items.updatedAt)
+) =>
   await db.query.items.findMany({
     where:
       conditions != null && conditions.length > 0
@@ -78,7 +81,10 @@ export const getItems = async (conditions?: SQLWrapper[], orderBy?: SQL) =>
     orderBy,
   });
 
-export const getRawItems = async (conditions?: SQLWrapper[], orderBy?: SQL) =>
+export const getRawItems = async (
+  conditions?: SQLWrapper[],
+  orderBy: SQL = desc(items.updatedAt)
+) =>
   await db.query.items.findMany({
     where:
       conditions != null && conditions.length > 0
@@ -228,19 +234,6 @@ export const getItemEvent = async (itemEventId: number) =>
 
 // tags
 
-export const getAllTags = async () =>
-  await db.query.tags.findMany({
-    with: {
-      item: {
-        with: {
-          type: true,
-          image: true,
-        },
-      },
-    },
-    orderBy: desc(tags.createdAt),
-  });
-
 export const getTag = async (tagId: number) =>
   await db.query.tags.findFirst({
     where: eq(tags.id, tagId),
@@ -278,6 +271,53 @@ export const getTagByUid = async (uid: string) =>
         },
       },
     },
+  });
+
+export const getTags = async (
+  conditions?: SQLWrapper[],
+  orderBy: SQL = desc(tags.attachedAt)
+) =>
+  await db.query.tags.findMany({
+    where:
+      conditions != null && conditions.length > 0
+        ? and(...conditions)
+        : undefined,
+    with: {
+      item: {
+        with: {
+          type: true,
+          image: true,
+        },
+      },
+    },
+    orderBy,
+  });
+
+export const getRawTags = async (
+  conditions?: SQLWrapper[],
+  orderBy: SQL = desc(tags.attachedAt)
+) =>
+  await db.query.tags.findMany({
+    where:
+      conditions != null && conditions.length > 0
+        ? and(...conditions)
+        : undefined,
+    orderBy,
+  });
+
+export const getTagsWithRawItems = async (
+  conditions?: SQLWrapper[],
+  orderBy: SQL = desc(tags.attachedAt)
+) =>
+  await db.query.tags.findMany({
+    where:
+      conditions != null && conditions.length > 0
+        ? and(...conditions)
+        : undefined,
+    with: {
+      item: true,
+    },
+    orderBy,
   });
 
 // images

@@ -8,6 +8,17 @@ import { Button } from "~/components/ui/button";
 import { createImageSchema, createImage } from "~/actions/insert.server";
 import { updateItem, updateItemSchema } from "~/actions/update.server";
 
+export const meta = ({ params }: Route.MetaArgs) => {
+  return [
+    {
+      title: `Edit Item${
+        params.itemId ? " " + params.itemId : ""
+      } - ShelfAware`,
+    },
+    // { name: "description", content: "ShelfAware" },
+  ];
+};
+
 export const loader = async ({ params }: Route.LoaderArgs) => {
   const item = await getItem(Number(params.itemId));
   return { item };
@@ -81,7 +92,6 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
 
   const parsed = updateItemSchema.parse(itemData);
   // console.log(parsed.originalWeight, parsed.currentWeight);
-
   const newItem = await updateItem(parsed);
 
   return redirect("/");

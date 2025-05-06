@@ -11,6 +11,28 @@ import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
+import { getTagsWithRawItems } from "~/actions/select.server";
+import {
+  Select,
+  SelectContent,
+  SelectTrigger,
+  SelectValue,
+  SelectItem,
+} from "~/components/ui/select";
+import { DateTime } from "luxon";
+import { updateTag } from "~/actions/update.server";
+
+export const meta = ({}: Route.MetaArgs) => {
+  return [
+    { title: "Create Item - ShelfAware" },
+    // { name: "description", content: "ShelfAware" },
+  ];
+};
+
+export const loader = async ({ request }: Route.LoaderArgs) => {
+  const tags = await getTagsWithRawItems();
+  return { tags };
+};
 
 export const action = async ({ request }: Route.ActionArgs) => {
   if (request.method !== "POST") {
@@ -30,7 +52,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   }
 
   let newImage: Awaited<ReturnType<typeof createImage>> | null = null;
-  if (imageFormData.data) {
+  if (imageFormData.data != null) {
     // console.log("imageFormData.data", imageFormData.data);
     const parsed = createImageSchema.parse(imageFormData);
     newImage = await createImage(parsed);
@@ -72,13 +94,20 @@ export const action = async ({ request }: Route.ActionArgs) => {
   // console.log("itemData", itemData);
 
   const parsed = createItemSchema.parse(itemData);
-
   const newItem = await createItem(parsed);
+
+  const formTagId = formData.get("tagId");
+  if (formTagId != null && formTagId !== "") {
+    const newTag = await updateTag({
+      id: Number(formTagId),
+      itemId: newItem.id,
+    });
+  }
 
   return redirect("/");
 };
 
-const ItemIndex = () => {
+const ItemIndex = ({ loaderData }: Route.ComponentProps) => {
   const fetcher = useFetcher({ key: "create-item" });
 
   return (
@@ -153,6 +182,30 @@ const ItemIndex = () => {
           <Label htmlFor="isPresent">
             Mark item as currently in the fridge
           </Label>
+        </div>
+        <div className="flex flex-col w-full space-y-2">
+          <Label id="tagId-label">Attached tag</Label>
+          <Select name="tagId">
+            <SelectTrigger aria-labelledby="tagId-label" className="w-full">
+              <SelectValue placeholder="Untagged" />
+            </SelectTrigger>
+            <SelectContent>
+              {loaderData.tags.map((tag) => (
+                <SelectItem key={tag.id} value={tag.id.toString()}>
+                  {tag.id}: {tag.name}, {tag.uid}
+                  {tag.item != null
+                    ? ` (attached to ${tag.item.name}${
+                        tag.attachedAt != null
+                          ? ` at ${DateTime.fromMillis(
+                              tag.attachedAt
+                            ).toLocaleString()}`
+                          : ""
+                      })`
+                    : null}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex flex-col w-full space-y-2">
           <Label htmlFor="image">Image</Label>

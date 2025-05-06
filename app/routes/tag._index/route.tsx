@@ -14,6 +14,13 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 
+export const meta = ({}: Route.MetaArgs) => {
+  return [
+    { title: "Create Tag - ShelfAware" },
+    // { name: "description", content: "ShelfAware" },
+  ];
+};
+
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const items = await getRawItems();
   return { items };
@@ -46,7 +53,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
   // console.log("itemData", itemData);
 
   const parsed = createTagSchema.parse(tagData);
-
   const newItem = await createTag(parsed);
 
   return redirect("/");

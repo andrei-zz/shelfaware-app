@@ -14,54 +14,14 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 
-// export const tags = pgTable(
-//   "tags",
-//   {
-//     id: serial("id").primaryKey(),
-//     name: text("name").notNull(),
-//     uid: varchar("uid", { length: 32 }).notNull().unique(),
-//     itemId: integer("item_id").references(() => items.id, {
-//       onDelete: "set null",
-//     }),
-//     createdAt: unixTimestamp("created_at")
-//       .notNull()
-//       .default(sql`now()`),
-//     attachedAt: unixTimestamp("attached_at"),
-//   },
-//   (table) => [
-//     check("uid_is_lower_hex", sql`${table.uid} ~ '^[0-9a-f]+$'`),
-//     uniqueIndex("unique_nonnull_item_id")
-//       .on(table.itemId)
-//       .where(sql`${table.itemId} IS NOT NULL`),
-//   ]
-// );
-// export const tagsRelations = relations(tags, ({ one }) => ({
-//   item: one(items, {
-//     fields: [tags.itemId],
-//     references: [items.id],
-//   }),
-// }));
-// export const createTagSchema = createInsertSchema(tags).omit({
-//   id: true,
-//   createdAt: true,
-//   attachedAt: true,
-// });
-// export const createTag = async (data: z.infer<typeof createTagSchema>) => {
-//   const attachedAt = data.itemId != null ? sql`now()` : null;
-
-//   if (data.itemId != null) {
-//     await db
-//       .update(items)
-//       .set({ updatedAt: sql`now()` })
-//       .where(eq(items.id, data.itemId));
-//   }
-
-//   return await db
-//     .insert(tags)
-//     .values({ ...data, attachedAt })
-//     .returning()
-//     .then((value) => value[0]);
-// };
+export const meta = ({params}: Route.MetaArgs) => {
+  return [
+    { title: `Edit Tag${
+        params.tagId ? " " + params.tagId : ""
+      } - ShelfAware` },
+    // { name: "description", content: "ShelfAware" },
+  ];
+};
 
 export const loader = async ({ params }: Route.LoaderArgs) => {
   const tag = await getTag(Number(params.tagId));
@@ -92,7 +52,6 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
   // console.log("itemData", itemData);
 
   const parsed = updateTagSchema.parse(tagData);
-
   const newItem = await updateTag(parsed);
 
   return redirect("/");
