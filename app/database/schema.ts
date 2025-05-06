@@ -1,45 +1,33 @@
-import { customType, uniqueIndex } from "drizzle-orm/pg-core";
+import { relations, sql } from "drizzle-orm";
 import {
   pgTable,
+  pgEnum,
+  customType,
   serial,
   text,
   integer,
   real,
   boolean,
   varchar,
-  pgEnum,
+  uniqueIndex,
+  check,
 } from "drizzle-orm/pg-core";
-import { relations, sql } from "drizzle-orm";
-
-// Typescript types
-
-export type InsertItemTypes = typeof itemTypes.$inferInsert;
-export type SelectItemTypes = typeof itemTypes.$inferSelect;
-
-export type InsertItems = typeof items.$inferInsert;
-export type SelectItems = typeof items.$inferSelect;
-
-export type InsertItemEvents = typeof itemEvents.$inferInsert;
-export type SelectItemEvents = typeof itemEvents.$inferSelect;
-
-export type InsertTags = typeof tags.$inferInsert;
-export type SelectTags = typeof tags.$inferSelect;
 
 // Types
 
 const unixTimestamp = customType<{
-  data: number;
-  driverData: Date;
+  data: number | null;
+  driverData: Date | null;
   columnType: "timestamp";
 }>({
   dataType() {
     return "timestamp";
   },
-  fromDriver(value: Date) {
-    return value.getTime();
+  fromDriver(value) {
+    return typeof value === "string" ? new Date(value).getTime() : null;
   },
-  toDriver(value: number) {
-    return new Date(value);
+  toDriver(value) {
+    return typeof value === "number" ? new Date(value) : null;
   },
 });
 
@@ -52,7 +40,9 @@ export const items = pgTable("items", {
   expireAt: unixTimestamp("expire_at"),
   originalWeight: real("original_weight"),
   currentWeight: real("current_weight"),
-  itemTypeId: integer("item_type_id"),
+  itemTypeId: integer("item_type_id").references(() => itemTypes.id, {
+    onDelete: "restrict",
+  }),
   isPresent: boolean("is_present").default(true),
   createdAt: unixTimestamp("created_at")
     .notNull()
@@ -61,7 +51,9 @@ export const items = pgTable("items", {
     .notNull()
     .default(sql`now()`),
   deletedAt: unixTimestamp("deleted_at"),
-  imageBase64: text("image_base64"),
+  imageId: integer("image_id").references(() => images.id, {
+    onDelete: "set null",
+  }),
 });
 
 export const itemTypes = pgTable("item_types", {
@@ -74,7 +66,9 @@ export const eventTypeEnum = pgEnum("event_type", ["in", "out", "moved"]);
 
 export const itemEvents = pgTable("item_events", {
   id: serial("id").primaryKey(),
-  itemId: integer("item_id").notNull(),
+  itemId: integer("item_id")
+    .notNull()
+    .references(() => items.id, { onDelete: "cascade" }),
   eventType: eventTypeEnum("event_type").notNull(),
   timestamp: unixTimestamp("timestamp")
     .notNull()
@@ -88,18 +82,29 @@ export const tags = pgTable(
     id: serial("id").primaryKey(),
     name: text("name").notNull(),
     uid: varchar("uid", { length: 32 }).notNull().unique(),
-    itemId: integer("item_id"),
+    itemId: integer("item_id").references(() => items.id, {
+      onDelete: "set null",
+    }),
     createdAt: unixTimestamp("created_at")
       .notNull()
       .default(sql`now()`),
     attachedAt: unixTimestamp("attached_at"),
   },
   (table) => [
+    check("uid_is_lower_hex", sql`${table.uid} ~ '^[0-9a-f]+$'`),
     uniqueIndex("unique_nonnull_item_id")
       .on(table.itemId)
       .where(sql`${table.itemId} IS NOT NULL`),
   ]
 );
+
+export const images = pgTable("images", {
+  id: serial("id").primaryKey(),
+  data: text("data").notNull(),
+  createdAt: unixTimestamp("created_at")
+    .notNull()
+    .default(sql`now()`),
+});
 
 // Relations
 
@@ -110,6 +115,10 @@ export const itemsRelations = relations(items, ({ one, many }) => ({
   }),
   events: many(itemEvents),
   tag: one(tags),
+  image: one(images, {
+    fields: [items.imageId],
+    references: [images.id],
+  }),
 }));
 
 export const itemTypesRelations = relations(itemTypes, ({ one, many }) => ({
@@ -132,4 +141,8 @@ export const tagsRelations = relations(tags, ({ one }) => ({
     fields: [tags.itemId],
     references: [items.id],
   }),
+}));
+
+export const imagesRelations = relations(images, ({ many }) => ({
+  items: many(items),
 }));

@@ -10,6 +10,7 @@ import {
 } from "react-router";
 
 import "./app.css";
+import { TooltipProvider } from "./components/ui/tooltip";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -29,7 +30,7 @@ export const links: Route.LinksFunction = () => [
 // };
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => (
-  <html lang="en">
+  <html lang="en" className="scrollbar-thumb-rounded-full scrollbar-thumb-neutral-700 scrollbar-track-neutral-200 scrollbar-hover:scrollbar-thumb-neutral-700/80 scrollbar-active:scrollbar-thumb-neutral-700/70">
     <head>
       <meta charSet="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -54,13 +55,11 @@ const App = () => {
   );
 };
 
-const AppWithProviders = ({ loaderData }: Route.ComponentProps) => {
+const AppWithProviders = ({}: Route.ComponentProps) => {
   return (
-    // <Provider
-    //   data={data}
-    // >
-    <App />
-    // </Provider>
+    <TooltipProvider delayDuration={400} skipDelayDuration={300}>
+      <App />
+    </TooltipProvider>
   );
 };
 export default AppWithProviders;

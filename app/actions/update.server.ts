@@ -1,49 +1,60 @@
 import { eq, sql } from "drizzle-orm";
+import { createUpdateSchema } from "drizzle-zod";
+import { z } from "zod";
 import { db } from "~/database/db.server";
-import {
-  type InsertItems,
-  type InsertTags,
-  items,
-  tags,
-} from "~/database/schema";
+import { images, items, tags } from "~/database/schema";
 
+export const updateItemSchema = createUpdateSchema(items)
+  .omit({
+    createdAt: true,
+    deletedAt: true,
+    updatedAt: true,
+  })
+  .partial()
+  .required({ id: true });
 // Only fields that update only the items table are allowed here
-export const updateItem = async (
-  itemId: number,
-  data: Partial<
-    Omit<
-      InsertItems,
-      | "id"
-      | "createdAt"
-      | "deletedAt"
-      | "updatedAt"
-      | "originalWeight"
-      | "currentWeight"
-      | "isPresent"
-    >
-  >
-) =>
-  await db
-    .update(items)
-    .set({
-      ...data,
-      updatedAt: sql`now()`,
-    })
-    .where(eq(items.id, itemId))
-    .returning();
+export const updateItem = async ({
+  id,
+  ...data
+}: z.infer<typeof updateItemSchema>) =>
+  id == null
+    ? null
+    : await db
+        .update(items)
+        .set({
+          ...data,
+          updatedAt: sql`now()`,
+        })
+        .where(eq(items.id, id))
+        .returning()
+        .then((value) => value[0]);
 
-export const updateTag = async (
-  tagId: number,
-  data: Partial<Omit<InsertTags, "id" | "uid" | "createdAt">>
-) => {
+export const updateTagSchema = createUpdateSchema(tags)
+  .omit({
+    createdAt: true,
+    attachedAt: true,
+  })
+  .partial();
+export const updateTag = async ({
+  id,
+  uid,
+  ...data
+}: z.infer<typeof updateTagSchema>) => {
+  const condition =
+    id != null ? eq(tags.id, id) : uid != null ? eq(tags.uid, uid) : undefined;
+
+  if (!condition) {
+    return null;
+  }
+
   const existing = await db
     .select({ itemId: tags.itemId })
     .from(tags)
-    .where(eq(tags.id, tagId))
+    .where(condition)
     .then((rows) => rows[0]);
 
   if (!existing) {
-    throw new Error(`Tag with id ${tagId} not found`);
+    throw new Error(`Tag with id ${id} not found`);
   }
 
   let attachedAt;
@@ -73,8 +84,28 @@ export const updateTag = async (
     .update(tags)
     .set({
       ...data,
-      ...(attachedAt !== undefined ? { attachedAt } : {}),
+      ...(attachedAt == null ? {} : { attachedAt }),
     })
-    .where(eq(tags.id, tagId))
-    .returning();
+    .where(condition)
+    .returning()
+    .then((value) => value[0]);
 };
+
+export const updateImageSchema = createUpdateSchema(images)
+  .omit({
+    createdAt: true,
+  })
+  .partial()
+  .required({ id: true });
+export const updateImage = async ({
+  id,
+  ...data
+}: z.infer<typeof updateImageSchema>) =>
+  id == null
+    ? null
+    : await db
+        .update(images)
+        .set(data)
+        .where(eq(images.id, id))
+        .returning()
+        .then((value) => value[0]);

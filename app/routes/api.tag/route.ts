@@ -1,32 +1,19 @@
-/**
- * /api/item
- * GET: returns the item object along with type and tag objects.
- * - /api/item?id=1
- * - /api/item?tagId=1
- * - /api/item?uid=FFFFFF
- * POST: create new item, type and tag must be created beforehand.
- * - createItem
- * PATCH: update the item, some fields are not editable though.
- * - updateItem
- */
-
+import { getTag, getTagByItemId, getTagByUid } from "~/actions/select.server";
 import type { Route } from "./+types/route";
-
+import { createTag, createTagSchema } from "~/actions/insert.server";
 import { z } from "zod";
-import { createItem, createItemSchema } from "~/actions/insert.server";
-import { getItem, getItemByTagId, getItemByUid } from "~/actions/select.server";
-import { updateItem, updateItemSchema } from "~/actions/update.server";
+import { updateTag, updateTagSchema } from "~/actions/update.server";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
-  let relativeUrl: string = "/api/item";
+  let relativeUrl: string = "/api/tag";
   let id: string | null;
-  let tagId: string | null;
+  let itemId: string | null;
   let uid: string | null;
   try {
     const url = new URL(request.url);
     relativeUrl = url.pathname + url.search;
     id = url.searchParams.get("id");
-    tagId = url.searchParams.get("tagId");
+    itemId = url.searchParams.get("itemId");
     uid = url.searchParams.get("uid");
   } catch (err: unknown) {
     console.error(`${relativeUrl}:GET\n`, err, "\n");
@@ -39,7 +26,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     );
   }
 
-  if (!id && !tagId && !uid) {
+  if (!id && !itemId && !uid) {
     return Response.json(
       { error: "Must provide id, tagId, or uid" },
       { status: 400 }
@@ -49,11 +36,11 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   try {
     let item = null;
     if (id) {
-      item = await getItem(Number(id));
-    } else if (tagId) {
-      item = await getItemByTagId(Number(tagId));
+      item = await getTag(Number(id));
+    } else if (itemId) {
+      item = await getTagByItemId(Number(itemId));
     } else if (uid) {
-      item = await getItemByUid(uid);
+      item = await getTagByUid(uid);
     }
 
     if (!item) {
@@ -79,7 +66,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 };
 
 export const action = async ({ request }: Route.ActionArgs) => {
-  let relativeUrl: string = "/api/item";
+  let relativeUrl: string = "/api/tag";
   try {
     const url = new URL(request.url);
     relativeUrl = url.pathname + url.search;
@@ -112,8 +99,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
   switch (request.method) {
     case "POST": {
       try {
-        const parsed = createItemSchema.parse(payload);
-        const newItem = await createItem(parsed);
+        const parsed = createTagSchema.parse(payload);
+        const newItem = await createTag(parsed);
         return Response.json(newItem, {
           status: 200,
           headers: {
@@ -144,8 +131,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
     }
     case "PATCH": {
       try {
-        const parsed = updateItemSchema.parse(payload);
-        const updatedItem = await updateItem(parsed);
+        const parsed = updateTagSchema.parse(payload);
+        const updatedItem = await updateTag(parsed);
         return Response.json(updatedItem, {
           status: 200,
           headers: {
