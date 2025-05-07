@@ -1,4 +1,4 @@
-import { getItem } from "~/actions/select.server";
+import { getItem, getTagsWithRawItems } from "~/actions/select.server";
 import type { Route } from "./+types/route";
 import { redirect, useFetcher } from "react-router";
 import { Input } from "~/components/ui/input";
@@ -7,6 +7,8 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
 import { createImageSchema, createImage } from "~/actions/insert.server";
 import { updateItem, updateItemSchema } from "~/actions/update.server";
+import { TagField } from "~/components/tag-field";
+import { ImageField } from "~/components/image-field";
 
 export const meta = ({ params }: Route.MetaArgs) => {
   return [
@@ -21,7 +23,8 @@ export const meta = ({ params }: Route.MetaArgs) => {
 
 export const loader = async ({ params }: Route.LoaderArgs) => {
   const item = await getItem(Number(params.itemId));
-  return { item };
+  const tags = await getTagsWithRawItems();
+  return { item, tags };
 };
 
 export const action = async ({ request, params }: Route.ActionArgs) => {
@@ -75,7 +78,7 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
         ? Number(itemFormData.currentWeight)
         : null,
     isPresent: Boolean(itemFormData.isPresent),
-    imageId: newImage?.id ?? undefined,
+    imageId: newImage?.id ?? itemFormData.imageId ?? undefined,
   };
 
   // console.log(
@@ -234,18 +237,18 @@ const ItemId = ({ loaderData }: Route.ComponentProps) => {
             className="w-full"
           />
         </div>
-        <div className="flex flex-col w-full space-y-2">
-          <Label htmlFor="image">Image</Label>
-          {loaderData?.item?.image ? (
-            <div className="w-48 h-48 flex justify-center items-center">
-              <img
-                className="max-w-full max-h-full contain-layout"
-                src={loaderData.item.image.data}
-              />
-            </div>
-          ) : null}
-          <Input type="file" accept="image/*" id="image" name="image" />
-        </div>
+        <TagField
+          name="tagId"
+          tags={loaderData.tags}
+          label="Attached tag"
+          placeholder="Untagged"
+        />
+        <ImageField
+          imageFileFieldName="image"
+          imageIdFieldName="imageId"
+          label="Image"
+          image={loaderData.item?.image ?? undefined}
+        />
         <div className="flex flex-col w-full space-y-2">
           <Button className="w-fit">Edit</Button>
         </div>

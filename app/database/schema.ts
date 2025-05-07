@@ -101,6 +101,7 @@ export const tags = pgTable(
 export const images = pgTable("images", {
   id: serial("id").primaryKey(),
   data: text("data").notNull(),
+  // caption: text("caption"),
   createdAt: unixTimestamp("created_at")
     .notNull()
     .default(sql`now()`),

@@ -12,15 +12,9 @@ import { Input } from "~/components/ui/input";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
 import { getTagsWithRawItems } from "~/actions/select.server";
-import {
-  Select,
-  SelectContent,
-  SelectTrigger,
-  SelectValue,
-  SelectItem,
-} from "~/components/ui/select";
-import { DateTime } from "luxon";
 import { updateTag } from "~/actions/update.server";
+import { TagField } from "~/components/tag-field";
+import { ImageField } from "~/components/image-field";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -84,7 +78,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
         ? Number(itemFormData.currentWeight)
         : null,
     isPresent: Boolean(itemFormData.isPresent),
-    imageId: newImage?.id ?? null,
+    imageId: newImage?.id ?? itemFormData.imageId ?? null,
   };
 
   if (itemData.originalWeight != null && itemData.currentWeight == null) {
@@ -107,7 +101,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   return redirect("/");
 };
 
-const ItemIndex = ({ loaderData }: Route.ComponentProps) => {
+const CreateItem = ({ loaderData }: Route.ComponentProps) => {
   const fetcher = useFetcher({ key: "create-item" });
 
   return (
@@ -183,30 +177,17 @@ const ItemIndex = ({ loaderData }: Route.ComponentProps) => {
             Mark item as currently in the fridge
           </Label>
         </div>
-        <div className="flex flex-col w-full space-y-2">
-          <Label id="tagId-label">Attached tag</Label>
-          <Select name="tagId">
-            <SelectTrigger aria-labelledby="tagId-label" className="w-full">
-              <SelectValue placeholder="Untagged" />
-            </SelectTrigger>
-            <SelectContent>
-              {loaderData.tags.map((tag) => (
-                <SelectItem key={tag.id} value={tag.id.toString()}>
-                  {tag.id}: {tag.name}, {tag.uid}
-                  {tag.item != null
-                    ? ` (attached to ${tag.item.name}${
-                        tag.attachedAt != null
-                          ? ` at ${DateTime.fromMillis(
-                              tag.attachedAt
-                            ).toLocaleString()}`
-                          : ""
-                      })`
-                    : null}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <TagField
+          name="tagId"
+          tags={loaderData.tags}
+          label="Attached tag"
+          placeholder="Untagged"
+        />
+        <ImageField
+          imageFileFieldName="image"
+          imageIdFieldName="imageId"
+          label="Image"
+        />
         <div className="flex flex-col w-full space-y-2">
           <Label htmlFor="image">Image</Label>
           <Input type="file" accept="image/*" id="image" name="image" />
@@ -218,4 +199,4 @@ const ItemIndex = ({ loaderData }: Route.ComponentProps) => {
     </main>
   );
 };
-export default ItemIndex;
+export default CreateItem;

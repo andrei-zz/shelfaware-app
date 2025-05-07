@@ -57,7 +57,7 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
   return redirect("/");
 };
 
-const ItemId = ({ loaderData }: Route.ComponentProps) => {
+const TagId = ({ loaderData }: Route.ComponentProps) => {
   const fetcher = useFetcher({ key: "edit-tag" });
 
   return (
@@ -163,4 +163,4 @@ const ItemId = ({ loaderData }: Route.ComponentProps) => {
     </main>
   );
 };
-export default ItemId;
+export default TagId;

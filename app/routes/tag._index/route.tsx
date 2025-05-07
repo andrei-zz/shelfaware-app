@@ -58,7 +58,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   return redirect("/");
 };
 
-const ItemIndex = ({ loaderData }: Route.ComponentProps) => {
+const CreateTag = ({ loaderData }: Route.ComponentProps) => {
   const fetcher = useFetcher({ key: "create-tag" });
 
   return (
@@ -114,4 +114,4 @@ const ItemIndex = ({ loaderData }: Route.ComponentProps) => {
     </main>
   );
 };
-export default ItemIndex;
+export default CreateTag;
