@@ -31,6 +31,16 @@ const unixTimestamp = customType<{
   },
 });
 
+const bytea = customType<{
+  data: Buffer;
+  driverData: Buffer;
+  columnType: "bytea";
+}>({
+  dataType: () => "bytea",
+  toDriver: (value) => Buffer.from(value),
+  fromDriver: (value) => Buffer.from(value),
+});
+
 // Tables
 
 export const items = pgTable("items", {
@@ -100,9 +110,14 @@ export const tags = pgTable(
 
 export const images = pgTable("images", {
   id: serial("id").primaryKey(),
-  data: text("data").notNull(),
-  // caption: text("caption"),
+  title: text("title"),
+  description: text("description"),
+  data: bytea("data").notNull(),
+  mimeType: text("mime_type").notNull(),
   createdAt: unixTimestamp("created_at")
+    .notNull()
+    .default(sql`now()`),
+  updatedAt: unixTimestamp("updated_at")
     .notNull()
     .default(sql`now()`),
 });

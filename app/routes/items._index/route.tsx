@@ -1,11 +1,7 @@
 import type { Route } from "./+types/route";
 
-import { NavLink } from "react-router";
-import { Plus } from "lucide-react";
 import { getPresentItems } from "~/actions/select.server";
-import { Button } from "~/components/ui/button";
 import { FridgeItem } from "~/components/fridge-item";
-import { CtxMenu } from "~/components/ctx-menu";
 import { CreateButton } from "~/components/create-button";
 
 export const meta = ({}: Route.MetaArgs) => {
@@ -36,9 +32,11 @@ const ItemsPage = ({ loaderData }: Route.ComponentProps) => {
         <CreateButton />
       </div>
       <div className="h-full p-1 flex flex-col space-y-2 overflow-y-scroll scrollbar">
-        {loaderData.items.map((item) => (
-          <FridgeItem key={item.id} item={item} />
-        ))}
+        {loaderData.items.length === 0
+          ? "Empty"
+          : loaderData.items.map((item) => (
+              <FridgeItem key={item.id} item={item} />
+            ))}
       </div>
     </main>
   );

@@ -21,13 +21,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
     relativeUrl = url.pathname + url.search;
   } catch (err: unknown) {
     console.error("/api/test\nInvalid URL:", err, "\n");
-    return Response.json(
-      { error: "Internal Server Error" },
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return new Response("Internal Server Error", {
+      status: 500,
+    });
   }
 
   if (request.method === "OPTIONS") {
@@ -47,13 +43,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
     console.log(`${relativeUrl}\nReceived payload:`, payload, "\n");
   } catch (err: unknown) {
     console.error(`${relativeUrl}\nJSON parse error:`, err, "\n");
-    return Response.json(
-      { error: "Bad Request" },
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return new Response("Bad Request", {
+      status: 400,
+    });
   }
 
   try {
@@ -88,12 +80,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
       );
     }
 
-    return Response.json(
-      { error: "Internal Server Error" },
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return new Response("Internal Server Error", {
+      status: 500,
+    });
   }
 };

@@ -30,6 +30,7 @@ export const TagItem = ({
               },
             ]),
       ]}
+      dropdownMenuCheckboxItemProps={{ className: "w-40 px-2" }}
       className="p-2 no-underline"
     >
       <NavLink

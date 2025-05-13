@@ -14,13 +14,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     urlSearchParams.timestamp = url.searchParams.get("timestamp");
   } catch (err: unknown) {
     console.error(relativeUrl, "\n", err, "\n");
-    return Response.json(
-      { error: "Internal Server Error" },
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return new Response("Internal Server Error", {
+      status: 500,
+    });
   }
 
   try {
@@ -28,15 +24,13 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     if (urlSearchParams.timestamp == null) {
       items = await getPresentItems();
     } else {
-      items = await getPresentItemsAtTime(
-        Number(urlSearchParams.timestamp)
-      );
+      items = await getPresentItemsAtTime(Number(urlSearchParams.timestamp));
     }
 
     if (!items) {
-
+      return new Response("No items found", { status: 404 });
     }
-    
+
     return Response.json(items, {
       status: 200,
       headers: {
@@ -45,12 +39,8 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     });
   } catch (err: unknown) {
     console.error(relativeUrl, "\n", err, "\n");
-    return Response.json(
-      { error: "Internal Server Error" },
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return new Response("Internal Server Error", {
+      status: 500,
+    });
   }
 };

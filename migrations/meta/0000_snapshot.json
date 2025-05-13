@@ -1,9 +1,66 @@
 {
-  "id": "34d19569-ce37-4e7e-a501-b259036a202c",
+  "id": "65b9fd8f-8774-4ce2-93ee-564def4a5ef7",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.images": {
+      "name": "images",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data": {
+          "name": "data",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mime_type": {
+          "name": "mime_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.item_events": {
       "name": "item_events",
       "schema": "",
@@ -22,7 +79,8 @@
         },
         "event_type": {
           "name": "event_type",
-          "type": "varchar(10)",
+          "type": "event_type",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -30,7 +88,7 @@
           "name": "timestamp",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "default": "now()"
         },
         "weight": {
@@ -52,7 +110,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -115,9 +173,9 @@
           "primaryKey": false,
           "notNull": false
         },
-        "image_base64": {
-          "name": "image_base64",
-          "type": "text",
+        "expire_at": {
+          "name": "expire_at",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
@@ -130,12 +188,6 @@
         "current_weight": {
           "name": "current_weight",
           "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "age": {
-          "name": "age",
-          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -156,12 +208,25 @@
           "name": "created_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
           "default": "now()"
         },
         "deleted_at": {
           "name": "deleted_at",
           "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_id": {
+          "name": "image_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         }
@@ -178,7 +243,20 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "items_image_id_images_id_fk": {
+          "name": "items_image_id_images_id_fk",
+          "tableFrom": "items",
+          "tableTo": "images",
+          "columnsFrom": [
+            "image_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -216,15 +294,38 @@
           "primaryKey": false,
           "notNull": false
         },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
         "attached_at": {
           "name": "attached_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "unique_nonnull_item_id": {
+          "name": "unique_nonnull_item_id",
+          "columns": [
+            {
+              "expression": "item_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"tags\".\"item_id\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "tags_item_id_items_id_fk": {
           "name": "tags_item_id_items_id_fk",
@@ -242,13 +343,6 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "tags_name_unique": {
-          "name": "tags_name_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
-        },
         "tags_uid_unique": {
           "name": "tags_uid_unique",
           "nullsNotDistinct": false,
@@ -258,11 +352,26 @@
         }
       },
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "uid_is_lower_hex": {
+          "name": "uid_is_lower_hex",
+          "value": "\"tags\".\"uid\" ~ '^[0-9a-f]+$'"
+        }
+      },
       "isRLSEnabled": false
     }
   },
-  "enums": {},
+  "enums": {
+    "public.event_type": {
+      "name": "event_type",
+      "schema": "public",
+      "values": [
+        "in",
+        "out",
+        "moved"
+      ]
+    }
+  },
   "schemas": {},
   "sequences": {},
   "roles": {},

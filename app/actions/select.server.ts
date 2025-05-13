@@ -24,11 +24,19 @@ export const getItem = async (itemId: number) =>
     with: {
       type: true,
       tag: true,
-      image: true,
+      image: {
+        columns: {
+          id: true,
+          title: true,
+          description: true,
+          data: false,
+          mimeType: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
     },
   });
-
-// export const getItemId = async ({tagId, uid, itemEventId}) => {};
 
 // Get (almost) full item data from tag id
 export const getItemByTagId = async (tagId: number) => {
@@ -39,7 +47,17 @@ export const getItemByTagId = async (tagId: number) => {
         with: {
           type: true,
           tag: true,
-          image: true,
+          image: {
+            columns: {
+              id: true,
+              title: true,
+              description: true,
+              data: false,
+              mimeType: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
         },
       },
     },
@@ -56,7 +74,17 @@ export const getItemByUid = async (tagUid: string) => {
         with: {
           type: true,
           tag: true,
-          image: true,
+          image: {
+            columns: {
+              id: true,
+              title: true,
+              description: true,
+              data: false,
+              mimeType: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
         },
       },
     },
@@ -76,7 +104,17 @@ export const getItems = async (
     with: {
       type: true,
       tag: true,
-      image: true,
+      image: {
+        columns: {
+          id: true,
+          title: true,
+          description: true,
+          data: false,
+          mimeType: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
     },
     orderBy,
   });
@@ -140,33 +178,33 @@ export const getPresentItemsAtTime = async (timestamp: number) => {
 
 // itemTypes
 
-const selectItemTypesSchema = createSelectSchema(itemTypes);
-export type ItemType = z.infer<typeof selectItemTypesSchema> & {
-  children: ItemType[];
-};
-// Build full type hierarchy
-export const getAllItemTypes = async () => {
-  const types = await db.select().from(itemTypes).orderBy(asc(itemTypes.id));
+// const selectItemTypesSchema = createSelectSchema(itemTypes);
+// export type ItemType = z.infer<typeof selectItemTypesSchema> & {
+//   children: ItemType[];
+// };
+// // Build full type hierarchy
+// export const getAllItemTypes = async () => {
+//   const types = await db.select().from(itemTypes).orderBy(asc(itemTypes.id));
 
-  // Build a tree (basic version)
-  const typeMap = new Map<number, ItemType>();
-  const roots: ItemType[] = [];
+//   // Build a tree (basic version)
+//   const typeMap = new Map<number, ItemType>();
+//   const roots: ItemType[] = [];
 
-  types.forEach((type) => {
-    typeMap.set(type.id, { ...type, children: [] });
-  });
+//   types.forEach((type) => {
+//     typeMap.set(type.id, { ...type, children: [] });
+//   });
 
-  typeMap.forEach((type) => {
-    if (type.parentId !== null) {
-      const parent = typeMap.get(type.parentId);
-      parent?.children.push(type);
-    } else {
-      roots.push(type);
-    }
-  });
+//   typeMap.forEach((type) => {
+//     if (type.parentId !== null) {
+//       const parent = typeMap.get(type.parentId);
+//       parent?.children.push(type);
+//     } else {
+//       roots.push(type);
+//     }
+//   });
 
-  return roots;
-};
+//   return roots;
+// };
 
 // itemEvents
 
@@ -194,7 +232,17 @@ export const getItemEvents = async (
         with: {
           type: true,
           tag: true,
-          image: true,
+          image: {
+            columns: {
+              id: true,
+              title: true,
+              description: true,
+              data: false,
+              mimeType: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
         },
       },
     },
@@ -211,7 +259,17 @@ export const getItemEventsOf = async (itemId: number) =>
         with: {
           type: true,
           tag: true,
-          image: true,
+          image: {
+            columns: {
+              id: true,
+              title: true,
+              description: true,
+              data: false,
+              mimeType: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
         },
       },
     },
@@ -226,7 +284,17 @@ export const getItemEvent = async (itemEventId: number) =>
         with: {
           type: true,
           tag: true,
-          image: true,
+          image: {
+            columns: {
+              id: true,
+              title: true,
+              description: true,
+              data: false,
+              mimeType: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
         },
       },
     },
@@ -241,7 +309,17 @@ export const getTag = async (tagId: number) =>
       item: {
         with: {
           type: true,
-          image: true,
+          image: {
+            columns: {
+              id: true,
+              title: true,
+              description: true,
+              data: false,
+              mimeType: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
         },
       },
     },
@@ -254,7 +332,17 @@ export const getTagByItemId = async (itemId: number) =>
       item: {
         with: {
           type: true,
-          image: true,
+          image: {
+            columns: {
+              id: true,
+              title: true,
+              description: true,
+              data: false,
+              mimeType: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
         },
       },
     },
@@ -267,7 +355,17 @@ export const getTagByUid = async (uid: string) =>
       item: {
         with: {
           type: true,
-          image: true,
+          image: {
+            columns: {
+              id: true,
+              title: true,
+              description: true,
+              data: false,
+              mimeType: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
         },
       },
     },
@@ -286,24 +384,34 @@ export const getTags = async (
       item: {
         with: {
           type: true,
-          image: true,
+          image: {
+            columns: {
+              id: true,
+              title: true,
+              description: true,
+              data: false,
+              mimeType: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
         },
       },
     },
     orderBy,
   });
 
-export const getRawTags = async (
-  conditions?: SQLWrapper[],
-  orderBy: SQL = desc(tags.attachedAt)
-) =>
-  await db.query.tags.findMany({
-    where:
-      conditions != null && conditions.length > 0
-        ? and(...conditions)
-        : undefined,
-    orderBy,
-  });
+// export const getRawTags = async (
+//   conditions?: SQLWrapper[],
+//   orderBy: SQL = desc(tags.attachedAt)
+// ) =>
+//   await db.query.tags.findMany({
+//     where:
+//       conditions != null && conditions.length > 0
+//         ? and(...conditions)
+//         : undefined,
+//     orderBy,
+//   });
 
 export const getTagsWithRawItems = async (
   conditions?: SQLWrapper[],
@@ -325,42 +433,109 @@ export const getTagsWithRawItems = async (
 export const getImage = async (imageId: number) =>
   await db.query.images.findFirst({
     where: eq(images.id, imageId),
-  });
-
-export const getImageByItemId = async (itemId: number) => {
-  const itemWithImage = await db.query.items.findFirst({
-    where: eq(items.id, itemId),
-    with: {
-      image: true,
+    columns: {
+      id: true,
+      title: true,
+      description: true,
+      data: false,
+      mimeType: true,
+      createdAt: true,
+      updatedAt: true,
     },
   });
-  return itemWithImage?.image ?? null;
-};
 
-export const getImageByTagId = async (tagId: number) => {
-  const tagWithItem = await db.query.tags.findFirst({
-    where: eq(tags.id, tagId),
-    with: {
-      item: {
-        with: {
-          image: true,
-        },
-      },
-    },
-  });
-  return tagWithItem?.item?.image ?? null;
-};
+// export const getImageByItemId = async (itemId: number) => {
+//   const itemWithImage = await db.query.items.findFirst({
+//     where: eq(items.id, itemId),
+//     with: {
+//       image: {
+//         columns: {
+//           id: true,
+//           title: true,
+//           description: true,
+//           data: false,
+//           mimeType: true,
+//           createdAt: true,
+//           updatedAt: true,
+//         },
+//       },
+//     },
+//   });
+//   return itemWithImage?.image ?? null;
+// };
 
-export const getImageByUid = async (tagUid: string) => {
-  const tagWithItem = await db.query.tags.findFirst({
-    where: eq(tags.uid, tagUid),
-    with: {
-      item: {
-        with: {
-          image: true,
-        },
-      },
+// export const getImageByTagId = async (tagId: number) => {
+//   const tagWithItem = await db.query.tags.findFirst({
+//     where: eq(tags.id, tagId),
+//     with: {
+//       item: {
+//         with: {
+//           image: {
+//             columns: {
+//               id: true,
+//               title: true,
+//               description: true,
+//               data: false,
+//               mimeType: true,
+//               createdAt: true,
+//               updatedAt: true,
+//             },
+//           },
+//         },
+//       },
+//     },
+//   });
+//   return tagWithItem?.item?.image ?? null;
+// };
+
+// export const getImageByUid = async (tagUid: string) => {
+//   const tagWithItem = await db.query.tags.findFirst({
+//     where: eq(tags.uid, tagUid),
+//     with: {
+//       item: {
+//         with: {
+//           image: {
+//             columns: {
+//               id: true,
+//               title: true,
+//               description: true,
+//               data: false,
+//               mimeType: true,
+//               createdAt: true,
+//               updatedAt: true,
+//             },
+//           },
+//         },
+//       },
+//     },
+//   });
+//   return tagWithItem?.item?.image ?? null;
+// };
+
+export const getImages = async (
+  conditions?: SQLWrapper[],
+  orderBy: SQL = desc(images.createdAt)
+) =>
+  await db.query.images.findMany({
+    columns: {
+      id: true,
+      title: true,
+      description: true,
+      data: false,
+      mimeType: true,
+      createdAt: true,
+      updatedAt: true,
     },
+    where:
+      conditions != null && conditions.length > 0
+        ? and(...conditions)
+        : undefined,
+    orderBy,
   });
-  return tagWithItem?.item?.image ?? null;
-};
+
+export const getImageWithData = async (imageId: number) =>
+  await db
+    .select()
+    .from(images)
+    .where(eq(images.id, imageId))
+    .then((rows) => rows[0]);

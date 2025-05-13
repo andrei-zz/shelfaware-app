@@ -11,7 +11,7 @@ import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
-import { getTagsWithRawItems } from "~/actions/select.server";
+import { getImages, getTagsWithRawItems } from "~/actions/select.server";
 import { updateTag } from "~/actions/update.server";
 import { TagField } from "~/components/tag-field";
 import { ImageField } from "~/components/image-field";
@@ -25,24 +25,25 @@ export const meta = ({}: Route.MetaArgs) => {
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const tags = await getTagsWithRawItems();
-  return { tags };
+  const images = await getImages();
+
+  return { tags, images };
 };
 
 export const action = async ({ request }: Route.ActionArgs) => {
   if (request.method !== "POST") {
-    return;
+    return new Response("Method Not Allowed", { status: 405 });
   }
 
   const formData = await request.formData();
 
-  const imageFormData: Record<string, FormDataEntryValue | null> = {};
+  const imageFormData: Record<string, unknown> = {};
   const imageFile = formData.get("image");
   // console.log("imageFile", imageFile, typeof imageFile);
   if (imageFile instanceof File && imageFile.size > 0) {
-    const buffer = await imageFile.arrayBuffer();
-    imageFormData.data = `data:${imageFile.type};base64,${Buffer.from(
-      buffer
-    ).toString("base64")}`;
+    const arrayBuffer = await imageFile.arrayBuffer();
+    imageFormData.data = Buffer.from(arrayBuffer);
+    imageFormData.mimeType = imageFile.type;
   }
 
   let newImage: Awaited<ReturnType<typeof createImage>> | null = null;
@@ -78,7 +79,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
         ? Number(itemFormData.currentWeight)
         : null,
     isPresent: Boolean(itemFormData.isPresent),
-    imageId: newImage?.id ?? itemFormData.imageId ?? null,
+    imageId:
+      newImage?.id ??
+      (itemFormData.imageId != null && itemFormData.imageId !== ""
+        ? Number(itemFormData.imageId)
+        : undefined),
   };
 
   if (itemData.originalWeight != null && itemData.currentWeight == null) {
@@ -139,7 +144,7 @@ const CreateItem = ({ loaderData }: Route.ComponentProps) => {
             type="date"
             id="expireAt"
             name="expireAt"
-            // min={new Date().toISOString().split("T")[0]}
+            // min={DateTime.now().toISODate()}
             className="w-full"
           />
         </div>
@@ -187,11 +192,8 @@ const CreateItem = ({ loaderData }: Route.ComponentProps) => {
           imageFileFieldName="image"
           imageIdFieldName="imageId"
           label="Image"
+          images={loaderData.images}
         />
-        <div className="flex flex-col w-full space-y-2">
-          <Label htmlFor="image">Image</Label>
-          <Input type="file" accept="image/*" id="image" name="image" />
-        </div>
         <div className="flex flex-col w-full space-y-2">
           <Button className="w-fit">Create</Button>
         </div>

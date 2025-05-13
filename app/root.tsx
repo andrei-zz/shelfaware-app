@@ -37,7 +37,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => (
       <Meta />
       <Links />
     </head>
-    <body>
+    <body className="overflow-hidden">
       {children}
       <ScrollRestoration />
       <Scripts />

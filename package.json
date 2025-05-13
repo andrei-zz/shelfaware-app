@@ -8,9 +8,9 @@
     "start": "node server.js",
     "dbgenerate": "drizzle-kit generate",
     "dbdrop": "drizzle-kit drop",
-    "dbmigrate": "npx drizzle-kit migrate",
-    "dbpush": "npx drizzle-kit push",
-    "dbstudio": "npx drizzle-kit studio",
+    "dbmigrate": "drizzle-kit migrate",
+    "dbpush": "drizzle-kit push",
+    "dbstudio": "drizzle-kit studio",
     "typecheck": "react-router typegen && tsc -b"
   },
   "dependencies": {

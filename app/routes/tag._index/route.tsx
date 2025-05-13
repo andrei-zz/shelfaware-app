@@ -5,7 +5,7 @@ import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { createTag, createTagSchema } from "~/actions/insert.server";
-import { getRawItems } from "~/actions/select.server";
+import { getItems } from "~/actions/select.server";
 import {
   Select,
   SelectContent,
@@ -22,13 +22,13 @@ export const meta = ({}: Route.MetaArgs) => {
 };
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
-  const items = await getRawItems();
+  const items = await getItems();
   return { items };
 };
 
 export const action = async ({ request }: Route.ActionArgs) => {
   if (request.method !== "POST") {
-    return;
+    return new Response("Method Not Allowed", { status: 405 });
   }
 
   const formData = await request.formData();
@@ -101,7 +101,10 @@ const CreateTag = ({ loaderData }: Route.ComponentProps) => {
             <SelectContent>
               {loaderData.items.map((item) => (
                 <SelectItem key={item.id} value={item.id.toString()}>
-                  {item.id}: {item.name} ({item.currentWeight} g)
+                  {item.id}: {item.name}, {item.currentWeight} g
+                  {item.tag == null
+                    ? null
+                    : ` (attached to ${item.tag.name}, UID: ${item.tag.uid})`}
                 </SelectItem>
               ))}
             </SelectContent>

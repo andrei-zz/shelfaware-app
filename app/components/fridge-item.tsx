@@ -29,7 +29,16 @@ export const FridgeItem = ({
                 onSelect: () => navigate(`/tag/${item.tag?.id}`),
               },
             ]),
+        ...(item.image == null
+          ? []
+          : [
+              {
+                label: "Edit image",
+                onSelect: () => navigate(`/image/${item.image?.id}`),
+              },
+            ]),
       ]}
+      dropdownMenuCheckboxItemProps={{ className: "w-40 px-2" }}
       className="p-2 no-underline"
     >
       <NavLink
@@ -45,7 +54,7 @@ export const FridgeItem = ({
           {item.image ? (
             <img
               className="max-w-full max-h-full contain-layout"
-              src={item.image.data}
+              src={`/api/image?id=${item.image.id}`}
             />
           ) : (
             <div className="h-full w-full bg-transparent" />

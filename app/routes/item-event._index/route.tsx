@@ -45,7 +45,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 export const action = async ({ request }: Route.ActionArgs) => {
   if (request.method !== "POST") {
-    return;
+    return new Response("Method Not Allowed", { status: 405 });
   }
 
   const formData = await request.formData();

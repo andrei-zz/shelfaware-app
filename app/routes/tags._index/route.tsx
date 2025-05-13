@@ -36,9 +36,9 @@ const TagsPage = ({ loaderData }: Route.ComponentProps) => {
         <CreateButton />
       </div>
       <div className="h-full p-1 flex flex-col space-y-2 overflow-y-scroll scrollbar">
-        {loaderData.tags.map((tag) => (
-          <TagItem key={tag.id} tag={tag} />
-        ))}
+        {loaderData.tags.length === 0
+          ? "Empty"
+          : loaderData.tags.map((tag) => <TagItem key={tag.id} tag={tag} />)}
       </div>
     </main>
   );

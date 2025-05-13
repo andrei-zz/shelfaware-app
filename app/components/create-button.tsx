@@ -37,11 +37,9 @@ export const CreateButton = () => {
           key: "/image",
           label: "Image",
           onSelect: () => navigate("/image"),
-          props: {
-            disabled: true,
-          },
         },
       ]}
+      dropdownMenuCheckboxItemProps={{ className: "px-2" }}
     >
       <Button>
         <Plus /> Create

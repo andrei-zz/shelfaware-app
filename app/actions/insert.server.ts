@@ -4,6 +4,10 @@ import { z } from "zod";
 import { db } from "~/database/db.server";
 import { items, itemTypes, itemEvents, tags, images } from "~/database/schema";
 
+const uidSchema = z.string().regex(/^[0-9a-f]+$/, {
+  message: "UID must be lowercase hex (0-9, a-f only)",
+});
+
 export const createItemSchema = createInsertSchema(items).omit({
   id: true,
   createdAt: true,
@@ -25,22 +29,24 @@ export const createItem = async (
     .then((value) => value[0]);
 };
 
-export const createItemTypeSchema = createInsertSchema(itemTypes).omit({
-  id: true,
-});
-export const createItemType = async (
-  data: z.infer<typeof createItemTypeSchema>
-) =>
-  await db
-    .insert(itemTypes)
-    .values(data)
-    .returning()
-    .then((value) => value[0]);
+// export const createItemTypeSchema = createInsertSchema(itemTypes).omit({
+//   id: true,
+// });
+// export const createItemType = async (
+//   data: z.infer<typeof createItemTypeSchema>
+// ) =>
+//   await db
+//     .insert(itemTypes)
+//     .values(data)
+//     .returning()
+//     .then((value) => value[0]);
 
-export const createItemEventSchema = createInsertSchema(itemEvents).omit({
-  id: true,
-  timestamp: true,
-});
+export const createItemEventSchema = createInsertSchema(itemEvents)
+  .omit({
+    id: true,
+    timestamp: true,
+  })
+  .extend({ uid: uidSchema.optional() });
 export const createItemEvent = async (
   data: z.infer<typeof createItemEventSchema>
 ) => {
@@ -77,6 +83,30 @@ export const createItemEvent = async (
   return event;
 };
 
+export const createItemAndTagByUidSchema = createItemEventSchema.omit({
+  itemId: true,
+});
+export const createItemAndTagByUid = async (
+  data: z.infer<typeof createItemAndTagByUidSchema>
+) => {
+  if (!data.uid) {
+    throw new Error("UID is required");
+  }
+
+  const item = await createItem({
+    name: `Item ${data.uid}`,
+    originalWeight: data.weight,
+    isPresent: data.eventType === "in" || data.eventType === "moved",
+  });
+
+  const tag = await createTag({
+    name: `Tag ${data.uid}`,
+    uid: data.uid,
+  });
+
+  return { item, tag };
+};
+
 export const createTagSchema = createInsertSchema(tags)
   .omit({
     id: true,
@@ -84,14 +114,17 @@ export const createTagSchema = createInsertSchema(tags)
     attachedAt: true,
   })
   .extend({
-    uid: z.string().regex(/^[0-9a-f]+$/, {
-      message: "UID must be lowercase hex (0-9, a-f only)",
-    }),
+    uid: uidSchema,
   });
 export const createTag = async (data: z.infer<typeof createTagSchema>) => {
   const attachedAt = data.itemId != null ? sql`now()` : null;
 
   if (data.itemId != null) {
+    await db
+      .update(tags)
+      .set({ itemId: null, attachedAt: null })
+      .where(eq(tags.itemId, data.itemId));
+
     await db
       .update(items)
       .set({ updatedAt: sql`now()` })
@@ -108,6 +141,7 @@ export const createTag = async (data: z.infer<typeof createTagSchema>) => {
 export const createImageSchema = createInsertSchema(images).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
 });
 export const createImage = async (data: z.infer<typeof createImageSchema>) =>
   await db

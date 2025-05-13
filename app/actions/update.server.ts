@@ -59,6 +59,13 @@ export const updateTag = async ({
 
   let attachedAt;
   if (existing.itemId !== data.itemId) {
+    if (data.itemId != null) {
+      await db
+        .update(tags)
+        .set({ itemId: null, attachedAt: null })
+        .where(eq(tags.itemId, data.itemId));
+    }
+
     // Update old item
     if (existing.itemId != null) {
       await db
@@ -66,7 +73,7 @@ export const updateTag = async ({
         .set({ updatedAt: sql`now()` })
         .where(eq(items.id, existing.itemId));
     }
-    
+
     if (data.itemId == null) {
       attachedAt = null;
     } else {
@@ -94,6 +101,7 @@ export const updateTag = async ({
 export const updateImageSchema = createUpdateSchema(images)
   .omit({
     createdAt: true,
+    updatedAt: true,
   })
   .partial()
   .required({ id: true });
