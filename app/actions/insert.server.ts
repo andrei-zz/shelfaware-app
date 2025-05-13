@@ -22,6 +22,13 @@ export const createItem = async (
     data.currentWeight = data.originalWeight;
   }
 
+  if (data.originalWeight != null && data.originalWeight < 0) {
+    data.originalWeight = null;
+  }
+  if (data.currentWeight != null && data.currentWeight < 0) {
+    data.currentWeight = null;
+  }
+
   return await db
     .insert(items)
     .values(data)
@@ -50,6 +57,10 @@ export const createItemEventSchema = createInsertSchema(itemEvents)
 export const createItemEvent = async (
   data: z.infer<typeof createItemEventSchema>
 ) => {
+  if (data.weight != null && data.weight < 0) {
+    data.weight = null;
+  }
+
   // Always insert the event
   const [event] = await db.insert(itemEvents).values(data).returning();
 
@@ -91,6 +102,9 @@ export const createItemAndTagByUid = async (
 ) => {
   if (!data.uid) {
     throw new Error("UID is required");
+  }
+  if (data.weight != null && data.weight < 0) {
+    data.weight = null;
   }
 
   const item = await createItem({

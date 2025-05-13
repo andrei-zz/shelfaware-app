@@ -16,18 +16,27 @@ export const updateItemSchema = createUpdateSchema(items)
 export const updateItem = async ({
   id,
   ...data
-}: z.infer<typeof updateItemSchema>) =>
-  id == null
-    ? null
-    : await db
-        .update(items)
-        .set({
-          ...data,
-          updatedAt: sql`now()`,
-        })
-        .where(eq(items.id, id))
-        .returning()
-        .then((value) => value[0]);
+}: z.infer<typeof updateItemSchema>) => {
+  if (id == null) {
+    return null;
+  }
+  if (data.originalWeight != null && data.originalWeight < 0) {
+    data.originalWeight = null;
+  }
+  if (data.currentWeight != null && data.currentWeight < 0) {
+    data.currentWeight = null;
+  }
+
+  return await db
+    .update(items)
+    .set({
+      ...data,
+      updatedAt: sql`now()`,
+    })
+    .where(eq(items.id, id))
+    .returning()
+    .then((value) => value[0]);
+};
 
 export const updateTagSchema = createUpdateSchema(tags)
   .omit({

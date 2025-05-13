@@ -83,6 +83,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
           return new Response("Must provide itemId or uid", { status: 400 });
         }
 
+        if (parsed.weight != null && parsed.weight < 0) {
+          parsed.weight = null;
+        }
+
         let itemId: number;
         if (parsed.itemId != null) {
           itemId = parsed.itemId;
