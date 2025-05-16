@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { Database, FileUp } from "lucide-react";
 import type { getImage, getImages } from "~/actions/select.server";
-import { Label } from "./ui/label";
-import { Input } from "./ui/input";
+import { Label } from "~/components/ui/label";
+import { Input } from "~/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
-import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
+} from "~/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
 
 interface ImageFieldProps {
   imageFileFieldName?: string;

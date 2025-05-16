@@ -16,6 +16,8 @@ import {
   createItemEvent,
   createItemEventSchema,
 } from "~/actions/insert.server";
+import { ItemEventType } from "~/components/item-event-type";
+import type { z } from "zod";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -79,7 +81,7 @@ const ItemEvent = ({ loaderData }: Route.ComponentProps) => {
   const fetcher = useFetcher({ key: "create-item-event" });
 
   return (
-    <main className="min-w-full max-h-dvh p-4 flex flex-col space-y-4 prose prose-lg">
+    <main className="min-w-full max-h-[calc(100dvh-3rem)] p-4 flex flex-col space-y-4 prose prose-lg">
       <div className="flex items-center justify-between">
         <h2 className="mt-0 mb-0">Create Item Event</h2>
       </div>
@@ -97,7 +99,11 @@ const ItemEvent = ({ loaderData }: Route.ComponentProps) => {
             <SelectContent>
               {loaderData.items.map((item) => (
                 <SelectItem key={item.id} value={item.id.toString()}>
-                  {item.id}: {item.name} ({item.currentWeight} g)
+                  {item.id}: {item.name} (
+                  {item.currentWeight == null
+                    ? "no weight"
+                    : `${item.currentWeight} g`}
+                  )
                 </SelectItem>
               ))}
             </SelectContent>
@@ -110,13 +116,15 @@ const ItemEvent = ({ loaderData }: Route.ComponentProps) => {
             required
             className="flex flex-col w-full items-center gap-2"
           >
-            {["in", "out", "moved"].map((type) => (
+            {(["in", "out", "moved"] as const).map((type) => (
               <div
                 key={`eventType-${type}`}
                 className="flex w-full items-center space-x-2"
               >
                 <RadioGroupItem id={`eventType-${type}`} value={type} />
-                <Label htmlFor={`eventType-${type}`}>{type}</Label>
+                <Label htmlFor={`eventType-${type}`}>
+                  <ItemEventType type={type} />
+                </Label>
               </div>
             ))}
           </RadioGroup>

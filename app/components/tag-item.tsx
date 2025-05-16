@@ -1,9 +1,9 @@
-import { Paperclip, Tag } from "lucide-react";
-import { DateTime } from "luxon";
 import { NavLink, useNavigate } from "react-router";
+import { DateTime } from "luxon";
 import type { getTag } from "~/actions/select.server";
 import { cn } from "~/lib/utils";
-import { CtxMenu } from "./ctx-menu";
+import { Paperclip } from "lucide-react";
+import { CtxMenu } from "~/components/ctx-menu";
 
 export const TagItem = ({
   tag,

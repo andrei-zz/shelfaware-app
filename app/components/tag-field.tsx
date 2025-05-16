@@ -1,13 +1,13 @@
 import { DateTime } from "luxon";
 import type { getTagsWithRawItems } from "~/actions/select.server";
-import { Label } from "./ui/label";
+import { Label } from "~/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
+} from "~/components/ui/select";
 
 interface TagFieldProps {
   name: string;
@@ -35,7 +35,7 @@ export const TagField = ({
         <SelectContent>
           {tags.map((tag) => (
             <SelectItem key={tag.id.toString()} value={tag.id.toString()}>
-              {tag.id}: {tag.name}, {tag.uid}
+              {tag.id}: {tag.name}, UID: {tag.uid}
               {tag.item != null
                 ? ` (attached to ${tag.item.name}${
                     tag.attachedAt != null

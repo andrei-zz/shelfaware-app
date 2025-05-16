@@ -10,7 +10,10 @@ import {
 } from "react-router";
 
 import "./app.css";
-import { TooltipProvider } from "./components/ui/tooltip";
+import { TooltipProvider } from "~/components/ui/tooltip";
+import { AppSidebar } from "~/components/sidebar/app-sidebar";
+import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
+import { SidebarInsetHeader } from "~/components/sidebar/sidebar-inset-header";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -30,7 +33,10 @@ export const links: Route.LinksFunction = () => [
 // };
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => (
-  <html lang="en" className="scrollbar-thumb-rounded-full scrollbar-thumb-neutral-700 scrollbar-track-neutral-200 scrollbar-hover:scrollbar-thumb-neutral-700/80 scrollbar-active:scrollbar-thumb-neutral-700/70">
+  <html
+    lang="en"
+    className="scrollbar-thumb-rounded-full scrollbar-thumb-neutral-700 scrollbar-track-neutral-200 scrollbar-hover:scrollbar-thumb-neutral-700/80 scrollbar-active:scrollbar-thumb-neutral-700/70"
+  >
     <head>
       <meta charSet="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -38,9 +44,15 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => (
       <Links />
     </head>
     <body className="overflow-hidden">
-      {children}
-      <ScrollRestoration />
-      <Scripts />
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <SidebarInsetHeader />
+          {children}
+        </SidebarInset>
+        <ScrollRestoration />
+        <Scripts />
+      </SidebarProvider>
     </body>
   </html>
 );
@@ -55,7 +67,7 @@ const App = () => {
   );
 };
 
-const AppWithProviders = ({}: Route.ComponentProps) => {
+const AppWithProviders = ({ loaderData }: Route.ComponentProps) => {
   return (
     <TooltipProvider delayDuration={400} skipDelayDuration={300}>
       <App />

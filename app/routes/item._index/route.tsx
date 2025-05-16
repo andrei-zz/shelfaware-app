@@ -110,7 +110,7 @@ const CreateItem = ({ loaderData }: Route.ComponentProps) => {
   const fetcher = useFetcher({ key: "create-item" });
 
   return (
-    <main className="min-w-full max-h-dvh p-4 flex flex-col space-y-4 prose prose-lg">
+    <main className="min-w-full max-h-[calc(100dvh-3rem)] p-4 flex flex-col space-y-4 prose prose-lg">
       <div className="flex items-center justify-between">
         <h2 className="mt-0 mb-0">Create Item</h2>
       </div>

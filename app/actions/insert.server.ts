@@ -116,6 +116,7 @@ export const createItemAndTagByUid = async (
   const tag = await createTag({
     name: `Tag ${data.uid}`,
     uid: data.uid,
+    itemId: item.id,
   });
 
   return { item, tag };

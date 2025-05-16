@@ -1,0 +1,180 @@
+import * as React from "react";
+import { Apple, ChevronRight, Image, ScrollText, Tag } from "lucide-react";
+
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "~/components/ui/collapsible";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarRail,
+  useSidebar,
+} from "~/components/ui/sidebar";
+import { SidebarLink } from "./sidebar-link";
+import { useNavigate } from "react-router";
+
+// This is sample data.
+const data = {
+  navMain: [
+    {
+      title: "Items",
+      icon: Apple,
+      url: "/items",
+      isActive: true,
+      items: [
+        // {
+        //   title: "Your Fridge",
+        //   url: "/",
+        // },
+        {
+          title: "Your Fridge",
+          url: "/items",
+        },
+        {
+          title: "Create item",
+          url: "/item",
+        },
+      ],
+    },
+    {
+      title: "Item events",
+      icon: ScrollText,
+      url: "/item-events",
+      isActive: true,
+      items: [
+        {
+          title: "Item events list",
+          url: "/item-events",
+        },
+        {
+          title: "Create item event",
+          url: "/item-event",
+        },
+      ],
+    },
+    {
+      title: "Tags",
+      icon: Tag,
+      url: "/tags",
+      isActive: true,
+      items: [
+        {
+          title: "Tags list",
+          url: "/tags",
+        },
+        {
+          title: "Create tag",
+          url: "/tag",
+        },
+      ],
+    },
+    {
+      title: "Images",
+      icon: Image,
+      url: "/images",
+      isActive: true,
+      items: [
+        {
+          title: "Images list",
+          url: "/images",
+        },
+        {
+          title: "Create image",
+          url: "/image",
+        },
+      ],
+    },
+  ],
+};
+
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const navigate = useNavigate();
+  const { isMobile, state, setOpen, openMobile, setOpenMobile } = useSidebar();
+
+  return (
+    <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => navigate("/")}
+              size="lg"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            >
+              <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                SA
+              </div>
+              <div className="flex flex-col gap-0.5 leading-none">
+                <span className="font-medium">ShelfAware</span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+      <SidebarContent className="gap-0">
+        {/* We create a collapsible SidebarGroup for each parent. */}
+        <SidebarGroup>
+          {/* <SidebarGroupLabel>Pages</SidebarGroupLabel> */}
+          <SidebarMenu>
+            {data.navMain.map((item) => (
+              <Collapsible
+                key={item.title}
+                asChild
+                defaultOpen={item.isActive}
+                className="group/collapsible"
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      tooltip={item.title}
+                      onClick={() => {
+                        if (!isMobile && state === "collapsed" && item.url) {
+                          navigate(item.url);
+                        }
+                      }}
+                    >
+                      {item.icon && <item.icon />}
+                      <span>{item.title}</span>
+                      <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {item.items?.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton
+                            asChild
+                            onClick={() => {
+                              if (isMobile && openMobile) {
+                                setOpenMobile(false);
+                              }
+                            }}
+                          >
+                            <SidebarLink navLinkProps={{ to: subItem.url }}>
+                              {subItem.title}
+                            </SidebarLink>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarRail />
+    </Sidebar>
+  );
+}

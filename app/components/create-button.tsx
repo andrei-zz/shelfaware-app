@@ -1,5 +1,5 @@
-import { CtxMenu } from "./ctx-menu";
-import { Button } from "./ui/button";
+import { CtxMenu } from "~/components/ctx-menu";
+import { Button } from "~/components/ui/button";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router";
 
@@ -25,14 +25,14 @@ export const CreateButton = () => {
           label: "Item event",
           onSelect: () => navigate("/item-event"),
         },
-        {
-          key: "/item-type",
-          label: "Item type",
-          onSelect: () => navigate("/item-type"),
-          props: {
-            disabled: true,
-          },
-        },
+        // {
+        //   key: "/item-type",
+        //   label: "Item type",
+        //   onSelect: () => navigate("/item-type"),
+        //   props: {
+        //     disabled: true,
+        //   },
+        // },
         {
           key: "/image",
           label: "Image",

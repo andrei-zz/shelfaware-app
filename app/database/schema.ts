@@ -147,7 +147,7 @@ export const itemTypesRelations = relations(itemTypes, ({ one, many }) => ({
 
 export const itemEventsRelations = relations(itemEvents, ({ one }) => ({
   item: one(items, {
-    fields: [itemEvents.id],
+    fields: [itemEvents.itemId],
     references: [items.id],
   }),
 }));

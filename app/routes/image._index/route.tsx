@@ -1,9 +1,13 @@
-import { redirect, useFetcher } from "react-router";
+import { Link, redirect, useFetcher } from "react-router";
 import type { Route } from "./+types/route";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { createImage, createImageSchema } from "~/actions/insert.server";
+
+export const handle = {
+  breadcrumb: () => <Link to="/image">Image</Link>,
+};
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -46,7 +50,7 @@ const CreateImage = ({}: Route.ComponentProps) => {
   const fetcher = useFetcher({ key: "create-image" });
 
   return (
-    <main className="min-w-full max-h-dvh p-4 flex flex-col space-y-4 prose prose-lg">
+    <main className="min-w-full max-h-[calc(100dvh-3rem)] p-4 flex flex-col space-y-4 prose prose-lg">
       <div className="flex items-center justify-between">
         <h2 className="mt-0 mb-0">Create Image</h2>
       </div>

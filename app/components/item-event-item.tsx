@@ -1,18 +1,18 @@
 import { Tag } from "lucide-react";
-import { DateTime } from "luxon";
 import { NavLink, useNavigate } from "react-router";
-import type { getItem } from "~/actions/select.server";
+import type { getItemEvent } from "~/actions/select.server";
 import { cn } from "~/lib/utils";
 import { CtxMenu } from "~/components/ctx-menu";
+import { ItemEventType } from "~/components/item-event-type";
 
-export const FridgeItem = ({
-  item,
+export const ItemEventItem = ({
+  itemEvent,
 }: {
-  item: Awaited<ReturnType<typeof getItem>>;
+  itemEvent: Awaited<ReturnType<typeof getItemEvent>>;
 }) => {
   const navigate = useNavigate();
 
-  if (item == null) {
+  if (itemEvent == null) {
     return null;
   }
 
@@ -21,20 +21,28 @@ export const FridgeItem = ({
       asChild
       features={["right-click", "long-press", "shift-enter"]}
       dropdownItems={[
-        ...(item.tag == null
+        ...(itemEvent.item == null
+          ? []
+          : [
+              {
+                label: "Edit item",
+                onSelect: () => navigate(`/item/${itemEvent.item.id}`),
+              },
+            ]),
+        ...(itemEvent.item?.tag == null
           ? []
           : [
               {
                 label: "Edit tag",
-                onSelect: () => navigate(`/tag/${item.tag?.id}`),
+                onSelect: () => navigate(`/tag/${itemEvent.item.tag?.id}`),
               },
             ]),
-        ...(item.image == null
+        ...(itemEvent.item?.image == null
           ? []
           : [
               {
                 label: "Edit image",
-                onSelect: () => navigate(`/image/${item.image?.id}`),
+                onSelect: () => navigate(`/image/${itemEvent.item.image?.id}`),
               },
             ]),
       ]}
@@ -42,7 +50,7 @@ export const FridgeItem = ({
       className="p-2 no-underline"
     >
       <NavLink
-        to={`/item/${item.id}`}
+        to={`/`}
         className={({ isPending }) =>
           cn(
             "p-2 flex items-center space-x-2 rounded hover:bg-accent border no-underline",
@@ -51,39 +59,35 @@ export const FridgeItem = ({
         }
       >
         <div className="w-24 h-24 flex justify-center items-center shrink-0">
-          {item.image ? (
+          {itemEvent.item.image ? (
             <img
               className="max-w-full max-h-full contain-layout"
-              src={`/api/image?id=${item.image.id}`}
+              src={`/api/image?id=${itemEvent.item.image.id}`}
             />
           ) : (
             <div className="h-full w-full bg-transparent" />
           )}
         </div>
         <div className="flex flex-col w-full grow">
-          <span>{item.name}</span>
-          <span className="text-sm font-light">{item.description}</span>
-          {item.itemTypeId == null ? null : (
-            <span className="text-sm font-light">Type: {item.itemTypeId}</span>
-          )}
-          {item.expireAt == null ? null : (
+          <span className="flex items-center gap-x-2">
+            <ItemEventType type={itemEvent.eventType} />
+            {itemEvent.item.name}
+          </span>
+          <span className="text-sm font-light">Event ID: {itemEvent.id}</span>
+          {itemEvent.weight == null ? null : (
             <span className="text-sm font-light">
-              Expiration date:{" "}
-              {DateTime.fromMillis(item.expireAt).toLocaleString()}
-            </span>
-          )}
-          {item.currentWeight == null ? null : (
-            <span className="text-sm font-light">
-              Weight: {item.currentWeight} g
+              Weight: {itemEvent.weight} g
             </span>
           )}
         </div>
-        {item.tag == null ? null : (
+        {itemEvent.item.tag == null ? null : (
           <div className="flex flex-col shrink-0 items-end">
             <span className="text-sm font-light">
-              <Tag className="size-4 inline-block" /> {item.tag.name}
+              <Tag className="size-4 inline-block" /> {itemEvent.item.tag.name}
             </span>
-            <span className="text-sm font-light">UID: {item.tag.uid}</span>
+            <span className="text-sm font-light">
+              UID: {itemEvent.item.tag.uid}
+            </span>
           </div>
         )}
       </NavLink>

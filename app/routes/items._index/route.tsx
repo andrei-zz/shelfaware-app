@@ -24,7 +24,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 const ItemsPage = ({ loaderData }: Route.ComponentProps) => {
   return (
-    <main className="min-w-full max-h-dvh p-4 flex flex-col space-y-4 prose prose-lg">
+    <main className="min-w-full max-h-[calc(100dvh-3rem)] p-4 flex flex-col space-y-4 prose prose-lg">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <h2 className="mt-0 mb-0">Your Fridge</h2>
