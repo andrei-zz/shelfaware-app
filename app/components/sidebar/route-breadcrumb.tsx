@@ -1,4 +1,5 @@
-import { Link, useLocation, useMatches, useNavigate } from "react-router";
+import { House, Slash } from "lucide-react";
+import { Link, useLocation } from "react-router";
 import { Fragment } from "react/jsx-runtime";
 import {
   Breadcrumb,
@@ -9,6 +10,7 @@ import {
   BreadcrumbSeparator,
 } from "~/components/ui/breadcrumb";
 import { Button } from "~/components/ui/button";
+import { cn } from "~/lib/utils";
 
 export const RouteBreadcrumb = () => {
   const location = useLocation();
@@ -17,11 +19,22 @@ export const RouteBreadcrumb = () => {
 
   return (
     <Breadcrumb>
-      <BreadcrumbList>
-        <BreadcrumbSeparator>
-          <Button asChild variant="link" className="px-0">
-            <Link to="/">/</Link>
+      <BreadcrumbList className="gap-2.5 sm:gap-2.5">
+        <BreadcrumbLink asChild>
+          <Button asChild variant="link" className="px-0! py-0 hover:[&_svg]:opacity-100">
+            <Link to="/">
+              <House
+                className={cn(
+                  location.pathname === "/"
+                    ? "opacity-90"
+                    : "opacity-60"
+                )}
+              />
+            </Link>
           </Button>
+        </BreadcrumbLink>
+        <BreadcrumbSeparator>
+          <Slash />
         </BreadcrumbSeparator>
         {pathnames.map((segment, idx) => {
           const path = "/" + pathnames.slice(0, idx + 1).join("/");
@@ -29,7 +42,11 @@ export const RouteBreadcrumb = () => {
 
           return (
             <Fragment key={idx}>
-              {idx === 0 ? null : <BreadcrumbSeparator>/</BreadcrumbSeparator>}
+              {idx === 0 ? null : (
+                <BreadcrumbSeparator>
+                  <Slash />
+                </BreadcrumbSeparator>
+              )}
               <BreadcrumbItem>
                 {isLast ? (
                   <BreadcrumbPage>{segment}</BreadcrumbPage>

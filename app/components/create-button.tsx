@@ -13,29 +13,29 @@ export const CreateButton = () => {
       dropdownMenuValue={location.pathname}
       dropdownItems={[
         {
-          key: "/item",
+          key: "/item/new",
           label: "Item",
-          props: { linkProps: { to: "/item" } },
+          props: { linkProps: { to: "/item/new" } },
         },
         {
-          key: "/tag",
+          key: "/tag/new",
           label: "Tag",
-          props: { linkProps: { to: "/tag" } },
+          props: { linkProps: { to: "/tag/new" } },
         },
         {
-          key: "/item-event",
+          key: "/item-event/new",
           label: "Item event",
-          props: { linkProps: { to: "/item-event" } },
+          props: { linkProps: { to: "/item-event/new" } },
         },
         // {
-        //   key: "/item-type",
+        //   key: "/item-type/new",
         //   label: "Item type",
-        //   props: { linkProps: { to: "/item-type" }, disabled: true },
+        //   props: { linkProps: { to: "/item-type/new" }, disabled: true },
         // },
         {
-          key: "/image",
+          key: "/image/new",
           label: "Image",
-          props: { linkProps: { to: "/image" } },
+          props: { linkProps: { to: "/image/new" } },
         },
       ]}
       dropdownMenuCheckboxItemProps={{ asLink: true, className: "px-2" }}

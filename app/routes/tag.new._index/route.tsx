@@ -1,0 +1,118 @@
+import type { Route } from "./+types/route";
+
+import { redirect } from "react-router";
+import { createTag, createTagSchema } from "~/actions/insert.server";
+import { getItems } from "~/actions/select.server";
+import { Label } from "~/components/ui/label";
+import { Input } from "~/components/ui/input";
+import { Button } from "~/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
+import { Main } from "~/components/main";
+import { Form } from "~/components/form";
+
+export const meta = ({}: Route.MetaArgs) => {
+  return [
+    { title: "Create Tag - ShelfAware" },
+    // { name: "description", content: "ShelfAware" },
+  ];
+};
+
+export const loader = async ({ request }: Route.LoaderArgs) => {
+  const items = await getItems();
+  return { items };
+};
+
+export const action = async ({ request }: Route.ActionArgs) => {
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
+  }
+
+  const formData = await request.formData();
+
+  const tagFormData: Record<string, FormDataEntryValue | null> = {};
+  tagFormData.name = formData.get("name");
+  tagFormData.uid = formData.get("uid");
+  tagFormData.itemId = formData.get("itemId");
+
+  const tagData: Record<string, unknown> = {
+    ...tagFormData,
+    uid:
+      typeof tagFormData.uid === "string"
+        ? tagFormData.uid.replace(/\s+/g, "").toLowerCase()
+        : null,
+    itemId:
+      tagFormData.itemId != null && tagFormData.itemId !== ""
+        ? Number(tagFormData.itemId)
+        : null,
+  };
+
+  // console.log("itemData", itemData);
+
+  const parsed = createTagSchema.parse(tagData);
+  const newItem = await createTag(parsed);
+
+  return redirect("/");
+};
+
+const CreateTag = ({ loaderData }: Route.ComponentProps) => {
+  return (
+    <Main>
+      <Form fetcherKey="create-tag" method="POST" encType="multipart/form-data">
+        <div className="flex items-center justify-between">
+          <h2 className="mt-0 mb-0">Create Tag</h2>
+        </div>
+        <div className="flex flex-col w-full space-y-2">
+          <Label htmlFor="name">Name</Label>
+          <Input
+            type="text"
+            id="name"
+            name="name"
+            autoComplete="off"
+            required
+            className="w-full"
+          />
+        </div>
+        <div className="flex flex-col w-full space-y-2">
+          <Label htmlFor="uid">UID (in hex)</Label>
+          <Input
+            type="text"
+            id="uid"
+            name="uid"
+            autoComplete="off"
+            required
+            placeholder=""
+            className="w-full"
+          />
+        </div>
+        <div className="flex flex-col w-full space-y-2">
+          <Label id="itemId-label">Attached item</Label>
+          <Select name="itemId">
+            <SelectTrigger aria-labelledby="itemId-label" className="w-full">
+              <SelectValue placeholder="Unattached" />
+            </SelectTrigger>
+            <SelectContent>
+              {loaderData.items.map((item) => (
+                <SelectItem key={item.id} value={item.id.toString()}>
+                  {item.id}: {item.name}, {item.currentWeight} g
+                  {item.tag == null
+                    ? null
+                    : ` (attached to ${item.tag.name}, UID: ${item.tag.uid})`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col w-full space-y-2">
+          <Button className="w-fit">Create</Button>
+        </div>
+      </Form>
+    </Main>
+  );
+};
+export default CreateTag;

@@ -1,3 +1,3 @@
 import { redirect } from "react-router";
 
-export const loader = () => redirect("/items");
+export const loader = () => redirect("/item");

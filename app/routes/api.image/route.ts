@@ -2,7 +2,7 @@ import type { Route } from "./+types/route";
 
 // import { getImageWithData } from "~/actions/select.server";
 
-const PATHNAME = "/api/item";
+const PATHNAME = "/api/image";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   let relativeUrl: string = PATHNAME;
@@ -34,7 +34,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   //     status: 200,
   //     headers: {
   //       "Content-Type": image.mimeType,
-  //       "Cache-Control": `public, max-age=${2 * 60 * 60}`, // seconds
+  //       "Cache-Control":  ? "public" : `public, max-age=${2 * 60 * 60}`, // seconds
   //     },
   //   });
   // } catch (err: unknown) {

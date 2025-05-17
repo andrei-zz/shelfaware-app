@@ -30,7 +30,7 @@ const data = {
     {
       title: "Items",
       icon: Apple,
-      url: "/items",
+      url: "/item",
       isActive: true,
       items: [
         // {
@@ -39,59 +39,59 @@ const data = {
         // },
         {
           title: "Your Fridge",
-          url: "/items",
+          url: "/item",
         },
         {
           title: "Create item",
-          url: "/item",
+          url: "/item/new",
         },
       ],
     },
     {
       title: "Item events",
       icon: ScrollText,
-      url: "/item-events",
+      url: "/item-event",
       isActive: true,
       items: [
         {
           title: "Item events list",
-          url: "/item-events",
+          url: "/item-event",
         },
         {
           title: "Create item event",
-          url: "/item-event",
+          url: "/item-event/new",
         },
       ],
     },
     {
       title: "Tags",
       icon: Tag,
-      url: "/tags",
+      url: "/tag",
       isActive: true,
       items: [
         {
           title: "Tags list",
-          url: "/tags",
+          url: "/tag",
         },
         {
           title: "Create tag",
-          url: "/tag",
+          url: "/tag/new",
         },
       ],
     },
     {
       title: "Images",
       icon: Image,
-      url: "/images",
+      url: "/image",
       isActive: true,
       items: [
         {
           title: "Images list",
-          url: "/images",
+          url: "/image",
         },
         {
           title: "Create image",
-          url: "/image",
+          url: "/image/new",
         },
       ],
     },

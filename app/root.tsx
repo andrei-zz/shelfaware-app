@@ -14,6 +14,7 @@ import { TooltipProvider } from "~/components/ui/tooltip";
 import { AppSidebar } from "~/components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
 import { SidebarInsetHeader } from "~/components/sidebar/sidebar-inset-header";
+import { Main } from "./components/main";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -82,10 +83,10 @@ export const ErrorBoundary = ({ error }: Route.ErrorBoundaryProps) => {
   let stack: string | undefined;
 
   if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
+    message = error.status === 404 ? "404: Not Found" : "Error";
     details =
       error.status === 404
-        ? "The requested page could not be found."
+        ? "The server cannot find the requested resource."
         : error.statusText || details;
   } else if (import.meta.env.DEV && error && error instanceof Error) {
     details = error.message;
@@ -94,15 +95,15 @@ export const ErrorBoundary = ({ error }: Route.ErrorBoundaryProps) => {
 
   return (
     <AppLayout>
-      <main className="pt-16 p-4 container mx-auto">
-        <h1>{message}</h1>
-        <p>{details}</p>
+      <Main className="p-4 pb-16 flex flex-col gap-y-4">
+        {message && <h2 className="mb-0">{message}</h2>}
+        {details && <p className="m-0">{details}</p>}
         {stack && (
           <pre className="w-full p-4 overflow-x-auto">
             <code>{stack}</code>
           </pre>
         )}
-      </main>
+      </Main>
     </AppLayout>
   );
 };

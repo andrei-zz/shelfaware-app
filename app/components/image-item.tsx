@@ -32,7 +32,7 @@ export const ImageItem = ({
             ]),
       ]}
       dropdownMenuCheckboxItemProps={{ className: "w-40 px-2" }}
-      className="no-underline w-full h-full flex flex-col items-center space-y-0"
+      className="py-2 no-underline w-full h-full flex flex-col items-center space-y-0"
     >
       <NavLink
         to={`/image/${image.id}`}
