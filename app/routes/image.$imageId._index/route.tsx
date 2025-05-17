@@ -1,17 +1,21 @@
-import { redirect, useFetcher } from "react-router";
 import type { Route } from "./+types/route";
+
+import { redirect } from "react-router";
+import { DateTime } from "luxon";
+import { getImage, getImages } from "~/actions/select.server";
+import { updateImage, updateImageSchema } from "~/actions/update.server";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
-import { getImage, getImages } from "~/actions/select.server";
 import { Button } from "~/components/ui/button";
-import { updateImage, updateImageSchema } from "~/actions/update.server";
-import { DateTime } from "luxon";
+import { Main } from "~/components/main";
+import { Image } from "~/components/image";
+import { Form } from "~/components/form";
 
 export const meta = ({ params }: Route.MetaArgs) => {
   return [
     {
       title: `Edit Image${
-        params.imageId ? " " + params.imageId : ""
+        params.imageId ? " #" + params.imageId : ""
       } - ShelfAware`,
     },
     // { name: "description", content: "ShelfAware" },
@@ -54,38 +58,35 @@ export const action = async ({ request }: Route.ActionArgs) => {
   return redirect("/");
 };
 
-// export const images = pgTable("images", {
-//   id: serial("id").primaryKey(),
-//   title: text("title"),
-//   description: text("description"),
-//   data: bytea("data").notNull(),
-//   mimeType: text("mime_type").notNull(),
-//   createdAt: unixTimestamp("created_at")
-//     .notNull()
-//     .default(sql`now()`),
-//   updatedAt: unixTimestamp("updated_at")
-//     .notNull()
-//     .default(sql`now()`),
-// });
-
-const CreateImage = ({ loaderData }: Route.ComponentProps) => {
-  const fetcher = useFetcher({ key: "create-image" });
-
+const ImageIdPage = ({ params, loaderData }: Route.ComponentProps) => {
   return (
-    <main className="min-w-full max-h-[calc(100dvh-3rem)] p-4 flex flex-col space-y-4 prose prose-lg">
-      <div className="flex items-center justify-between">
-        <h2 className="mt-0 mb-0">Create Image</h2>
+    <Main>
+    {loaderData.image == null ? (
+      <div className="h-full w-full p-4 pb-16 flex flex-col gap-y-4 overflow-y-scroll scrollbar">
+        <div className="flex items-center justify-between">
+          <h2 className="mt-0 mb-0">{`Edit Image${
+            params.imageId ? " #" + params.imageId : ""
+          }`}</h2>
+        </div>
+        Image not found
       </div>
-      <fetcher.Form
+    ) : (
+      <Form
+        fetcherKey="create-image"
         method="POST"
         encType="multipart/form-data"
-        className="h-full w-full p-1 flex flex-col space-y-4 overflow-y-scroll scrollbar"
       >
+        <div className="flex items-center justify-between">
+          <h2 className="mt-0 mb-0">{`Edit Image${
+            params.imageId ? " #" + params.imageId : ""
+          }`}</h2>
+        </div>
         <div className="flex flex-col w-full space-y-2">
           <Label htmlFor="name">ID</Label>
           <Input
             type="number"
             id="id"
+            autoComplete="off"
             readOnly
             disabled
             value={loaderData.image?.id}
@@ -98,6 +99,7 @@ const CreateImage = ({ loaderData }: Route.ComponentProps) => {
             type="text"
             id="title"
             name="title"
+            autoComplete="off"
             defaultValue={loaderData.image?.title ?? undefined}
             className="w-full"
           />
@@ -108,6 +110,7 @@ const CreateImage = ({ loaderData }: Route.ComponentProps) => {
             type="text"
             id="description"
             name="description"
+            autoComplete="off"
             defaultValue={loaderData.image?.description ?? undefined}
             className="w-full"
           />
@@ -123,12 +126,17 @@ const CreateImage = ({ loaderData }: Route.ComponentProps) => {
           />
           <div className="flex flex-col">
             <span className="text-sm font-light">Current</span>
-            <div className="w-48 h-48 flex justify-center items-center hover:bg-accent">
-              <img
-                className="max-w-full max-h-full contain-layout"
-                src={`/api/image?id=${loaderData.image?.id}`}
-              />
-            </div>
+            <Image
+              src={
+                loaderData.image == null
+                  ? undefined
+                  : `/api/image?id=${loaderData.image.id}`
+              }
+              size="lg"
+              containerProps={{
+                className: "hover:bg-accent hover:**:opacity-80",
+              }}
+            />
           </div>
         </div>
         <div className="flex flex-col w-full space-y-2">
@@ -137,6 +145,7 @@ const CreateImage = ({ loaderData }: Route.ComponentProps) => {
             type="text"
             id="mimeType"
             name="mimeType"
+            autoComplete="off"
             readOnly
             disabled
             defaultValue={loaderData.image?.mimeType ?? undefined}
@@ -180,8 +189,8 @@ const CreateImage = ({ loaderData }: Route.ComponentProps) => {
         <div className="flex flex-col w-full space-y-2">
           <Button className="w-fit">Create</Button>
         </div>
-      </fetcher.Form>
-    </main>
+      </Form>)}
+    </Main>
   );
 };
-export default CreateImage;
+export default ImageIdPage;

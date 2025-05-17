@@ -4,6 +4,7 @@ import { NavLink, useNavigate } from "react-router";
 import type { getItem } from "~/actions/select.server";
 import { cn } from "~/lib/utils";
 import { CtxMenu } from "~/components/ctx-menu";
+import { Image } from "./image";
 
 export const FridgeItem = ({
   item,
@@ -50,16 +51,12 @@ export const FridgeItem = ({
           )
         }
       >
-        <div className="w-24 h-24 flex justify-center items-center shrink-0">
-          {item.image ? (
-            <img
-              className="max-w-full max-h-full contain-layout"
-              src={`/api/image?id=${item.image.id}`}
-            />
-          ) : (
-            <div className="h-full w-full bg-transparent" />
-          )}
-        </div>
+        <Image
+          src={
+            item.image == null ? undefined : `/api/image?id=${item.image.id}`
+          }
+          size="24"
+        />
         <div className="flex flex-col w-full grow">
           <span>{item.name}</span>
           <span className="text-sm font-light">{item.description}</span>

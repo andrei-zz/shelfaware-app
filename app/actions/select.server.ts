@@ -533,9 +533,19 @@ export const getImages = async (
     orderBy,
   });
 
-export const getImageWithData = async (imageId: number) =>
-  await db
+export const getImageWithData = async (imageId: number) => {
+  const imagesData = await db
     .select()
     .from(images)
-    .where(eq(images.id, imageId))
-    .then((rows) => rows[0]);
+    .where(eq(images.id, imageId));
+
+  if (
+    typeof imagesData === "object" &&
+    Array.isArray(imagesData) &&
+    imagesData.length === 1
+  ) {
+    return imagesData[0];
+  }
+
+  return null;
+};

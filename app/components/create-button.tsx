@@ -1,45 +1,44 @@
+import { useLocation } from "react-router";
+import { Plus } from "lucide-react";
 import { CtxMenu } from "~/components/ctx-menu";
 import { Button } from "~/components/ui/button";
-import { Plus } from "lucide-react";
-import { useNavigate } from "react-router";
 
 export const CreateButton = () => {
-  const navigate = useNavigate();
+  const location = useLocation();
+
   return (
     <CtxMenu
       asChild
       features={["click"]}
+      dropdownMenuValue={location.pathname}
       dropdownItems={[
         {
           key: "/item",
           label: "Item",
-          onSelect: () => navigate("/item"),
+          props: { linkProps: { to: "/item" } },
         },
         {
           key: "/tag",
           label: "Tag",
-          onSelect: () => navigate("/tag"),
+          props: { linkProps: { to: "/tag" } },
         },
         {
           key: "/item-event",
           label: "Item event",
-          onSelect: () => navigate("/item-event"),
+          props: { linkProps: { to: "/item-event" } },
         },
         // {
         //   key: "/item-type",
         //   label: "Item type",
-        //   onSelect: () => navigate("/item-type"),
-        //   props: {
-        //     disabled: true,
-        //   },
+        //   props: { linkProps: { to: "/item-type" }, disabled: true },
         // },
         {
           key: "/image",
           label: "Image",
-          onSelect: () => navigate("/image"),
+          props: { linkProps: { to: "/image" } },
         },
       ]}
-      dropdownMenuCheckboxItemProps={{ className: "px-2" }}
+      dropdownMenuCheckboxItemProps={{ asLink: true, className: "px-2" }}
     >
       <Button>
         <Plus /> Create

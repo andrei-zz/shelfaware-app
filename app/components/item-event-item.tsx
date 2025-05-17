@@ -4,6 +4,7 @@ import type { getItemEvent } from "~/actions/select.server";
 import { cn } from "~/lib/utils";
 import { CtxMenu } from "~/components/ctx-menu";
 import { ItemEventType } from "~/components/item-event-type";
+import { Image } from "./image";
 
 export const ItemEventItem = ({
   itemEvent,
@@ -50,7 +51,7 @@ export const ItemEventItem = ({
       className="p-2 no-underline"
     >
       <NavLink
-        to={`/`}
+        to={`/item-event/${itemEvent.id}`}
         className={({ isPending }) =>
           cn(
             "p-2 flex items-center space-x-2 rounded hover:bg-accent border no-underline",
@@ -58,16 +59,14 @@ export const ItemEventItem = ({
           )
         }
       >
-        <div className="w-24 h-24 flex justify-center items-center shrink-0">
-          {itemEvent.item.image ? (
-            <img
-              className="max-w-full max-h-full contain-layout"
-              src={`/api/image?id=${itemEvent.item.image.id}`}
-            />
-          ) : (
-            <div className="h-full w-full bg-transparent" />
-          )}
-        </div>
+        <Image
+          src={
+            itemEvent.item.image == null
+              ? undefined
+              : `/api/image?id=${itemEvent.item.image.id}`
+          }
+          size="24"
+        />
         <div className="flex flex-col w-full grow">
           <span className="flex items-center gap-x-2">
             <ItemEventType type={itemEvent.eventType} />

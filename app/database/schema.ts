@@ -12,6 +12,7 @@ import {
   uniqueIndex,
   check,
 } from "drizzle-orm/pg-core";
+import type { Resolved } from "~/lib/types";
 
 // Types
 
@@ -65,15 +66,20 @@ export const items = pgTable("items", {
     onDelete: "set null",
   }),
 });
+export type ItemObj = Resolved<typeof items.$inferSelect>;
 
+// TODO: make name unique, get rid of the hierarchies
 export const itemTypes = pgTable("item_types", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   parentId: integer("parent_id"),
 });
+export type ItemType = Resolved<typeof itemTypes.$inferSelect>;
 
 export const eventTypeEnum = pgEnum("event_type", ["in", "out", "moved"]);
+export type EventType = Resolved<typeof eventTypeEnum.enumValues>[number];
 
+// add image
 export const itemEvents = pgTable("item_events", {
   id: serial("id").primaryKey(),
   itemId: integer("item_id")
@@ -85,6 +91,7 @@ export const itemEvents = pgTable("item_events", {
     .default(sql`now()`),
   weight: real("weight"),
 });
+export type ItemEvent = Resolved<typeof itemEvents.$inferSelect>;
 
 export const tags = pgTable(
   "tags",
@@ -107,7 +114,11 @@ export const tags = pgTable(
       .where(sql`${table.itemId} IS NOT NULL`),
   ]
 );
+export type Tag = Resolved<typeof tags.$inferSelect>;
 
+// Move data to S3,
+// insert and select only, no updates,
+// deletedAt
 export const images = pgTable("images", {
   id: serial("id").primaryKey(),
   title: text("title"),
@@ -121,6 +132,7 @@ export const images = pgTable("images", {
     .notNull()
     .default(sql`now()`),
 });
+export type ImageMeta = Resolved<typeof images.$inferSelect>;
 
 // Relations
 

@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
+import { Image } from "./image";
 
 interface ImageFieldProps {
   imageFileFieldName?: string;
@@ -32,7 +33,7 @@ export const ImageField = ({
     image?.id.toString()
   );
   return (
-    <div className="flex flex-col w-full space-y-2">
+    <div className="flex flex-col w-full gap-y-2">
       <div className="flex items-center space-x-4">
         {label == null ? null : (
           <Label
@@ -72,7 +73,10 @@ export const ImageField = ({
           value={imageIdValue}
           onValueChange={setImageIdValue}
         >
-          <SelectTrigger aria-labelledby={imageIdFieldName} className="w-full mb-0">
+          <SelectTrigger
+            aria-labelledby={imageIdFieldName}
+            className="w-full mb-0"
+          >
             <SelectValue placeholder="No image" />
           </SelectTrigger>
           <SelectContent>
@@ -97,23 +101,25 @@ export const ImageField = ({
           {image ? (
             <div className="flex flex-col">
               <span className="text-sm font-light">Current</span>
-              <div className="w-48 h-48 flex justify-center items-center hover:bg-accent">
-                <img
-                  className="max-w-full max-h-full contain-layout"
-                  src={`/api/image?id=${image.id}`}
-                />
-              </div>
+              <Image
+                src={`/api/image?id=${image.id}`}
+                size="lg"
+                containerProps={{
+                  className: "hover:bg-accent hover:**:opacity-80",
+                }}
+              />
             </div>
           ) : null}
           {mode === "existing" && imageIdValue != null ? (
             <div className="flex flex-col">
               <span className="text-sm font-light">Preview</span>
-              <div className="w-48 h-48 flex justify-center items-center hover:bg-accent">
-                <img
-                  className="max-w-full max-h-full contain-layout"
-                  src={`/api/image?id=${imageIdValue}`}
-                />
-              </div>
+              <Image
+                src={`/api/image?id=${imageIdValue}`}
+                size="lg"
+                containerProps={{
+                  className: "hover:bg-accent hover:**:opacity-80",
+                }}
+              />
             </div>
           ) : null}
         </div>

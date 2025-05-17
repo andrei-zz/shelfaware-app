@@ -21,7 +21,8 @@ import {
   useSidebar,
 } from "~/components/ui/sidebar";
 import { SidebarLink } from "./sidebar-link";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
+import { cn } from "~/lib/utils";
 
 // This is sample data.
 const data = {
@@ -98,8 +99,10 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const location = useLocation();
   const navigate = useNavigate();
-  const { isMobile, state, setOpen, openMobile, setOpenMobile } = useSidebar();
+
+  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -142,6 +145,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           navigate(item.url);
                         }
                       }}
+                      className={cn(
+                        "transition-colors",
+                        !isMobile &&
+                          state === "collapsed" &&
+                          item.url &&
+                          item.url === location.pathname
+                          ? "bg-border"
+                          : undefined
+                      )}
                     >
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>
@@ -159,6 +171,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                 setOpenMobile(false);
                               }
                             }}
+                            className={cn(
+                              "transition-colors",
+                              subItem.url && subItem.url === location.pathname
+                                ? "bg-border"
+                                : undefined
+                            )}
                           >
                             <SidebarLink navLinkProps={{ to: subItem.url }}>
                               {subItem.title}

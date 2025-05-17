@@ -12,7 +12,6 @@ import {
   DropdownMenuArrow,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { ContextMenu, ContextMenuTrigger } from "~/components/ui/context-menu";
@@ -27,9 +26,12 @@ const defaultLongPressDescription: string = "Show options";
 
 type ItemDropdown = {
   key?: string;
-  label?: string | React.ReactNode;
-  onSelect?: React.ComponentProps<typeof DropdownMenuItem>["onSelect"];
-  props?: Omit<React.ComponentProps<typeof DropdownMenuItem>, "onSelect">;
+  label?: React.ReactNode;
+  onSelect?: React.ComponentProps<typeof DropdownMenuCheckboxItem>["onSelect"];
+  props?: Omit<
+    React.ComponentProps<typeof DropdownMenuCheckboxItem>,
+    "onSelect"
+  >;
 };
 
 interface CtxMenuOwnProps {

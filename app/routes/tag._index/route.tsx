@@ -1,11 +1,11 @@
 import type { Route } from "./+types/route";
 
-import { redirect, useFetcher } from "react-router";
+import { redirect } from "react-router";
+import { createTag, createTagSchema } from "~/actions/insert.server";
+import { getItems } from "~/actions/select.server";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
-import { createTag, createTagSchema } from "~/actions/insert.server";
-import { getItems } from "~/actions/select.server";
 import {
   Select,
   SelectContent,
@@ -13,6 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import { Main } from "~/components/main";
+import { Form } from "~/components/form";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -59,24 +61,19 @@ export const action = async ({ request }: Route.ActionArgs) => {
 };
 
 const CreateTag = ({ loaderData }: Route.ComponentProps) => {
-  const fetcher = useFetcher({ key: "create-tag" });
-
   return (
-    <main className="min-w-full max-h-[calc(100dvh-3rem)] p-4 flex flex-col space-y-4 prose prose-lg">
-      <div className="flex items-center justify-between">
-        <h2 className="mt-0 mb-0">Create Tag</h2>
-      </div>
-      <fetcher.Form
-        method="POST"
-        encType="multipart/form-data"
-        className="h-full w-full p-1 flex flex-col space-y-4 overflow-y-scroll scrollbar"
-      >
+    <Main>
+      <Form fetcherKey="create-tag" method="POST" encType="multipart/form-data">
+        <div className="flex items-center justify-between">
+          <h2 className="mt-0 mb-0">Create Tag</h2>
+        </div>
         <div className="flex flex-col w-full space-y-2">
           <Label htmlFor="name">Name</Label>
           <Input
             type="text"
             id="name"
             name="name"
+            autoComplete="off"
             required
             className="w-full"
           />
@@ -87,8 +84,9 @@ const CreateTag = ({ loaderData }: Route.ComponentProps) => {
             type="text"
             id="uid"
             name="uid"
+            autoComplete="off"
             required
-            placeholder="DE AD BE EF"
+            placeholder=""
             className="w-full"
           />
         </div>
@@ -113,8 +111,8 @@ const CreateTag = ({ loaderData }: Route.ComponentProps) => {
         <div className="flex flex-col w-full space-y-2">
           <Button className="w-fit">Create</Button>
         </div>
-      </fetcher.Form>
-    </main>
+      </Form>
+    </Main>
   );
 };
 export default CreateTag;

@@ -1,4 +1,4 @@
-import { useMatches } from "react-router";
+import { Link, useLocation, useMatches, useNavigate } from "react-router";
 import { Fragment } from "react/jsx-runtime";
 import {
   Breadcrumb,
@@ -8,40 +8,40 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "~/components/ui/breadcrumb";
+import { Button } from "~/components/ui/button";
 
 export const RouteBreadcrumb = () => {
-  const matches = useMatches();
+  const location = useLocation();
 
-  const crumbs = matches.flatMap((match, matchIdx, matchArr) => {
-    const segments = match.pathname.split("/").filter(Boolean);
-    return segments.map((segment, segIdx) => {
-      const path = "/" + segments.slice(0, segIdx + 1).join("/");
-      const isLast =
-        matchIdx === matchArr.length - 1 && segIdx === segments.length - 1;
-
-      return {
-        label: segment,
-        path,
-        isLast,
-      };
-    });
-  });
+  const pathnames = location.pathname.split("/").filter(Boolean);
 
   return (
     <Breadcrumb>
       <BreadcrumbList>
-        {crumbs.map((crumb, idx) => (
-          <Fragment key={idx}>
-            <BreadcrumbSeparator>/</BreadcrumbSeparator>
-            <BreadcrumbItem>
-              {crumb.isLast ? (
-                <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink href={crumb.path}>{crumb.label}</BreadcrumbLink>
-              )}
-            </BreadcrumbItem>
-          </Fragment>
-        ))}
+        <BreadcrumbSeparator>
+          <Button asChild variant="link" className="px-0">
+            <Link to="/">/</Link>
+          </Button>
+        </BreadcrumbSeparator>
+        {pathnames.map((segment, idx) => {
+          const path = "/" + pathnames.slice(0, idx + 1).join("/");
+          const isLast = idx === pathnames.length - 1;
+
+          return (
+            <Fragment key={idx}>
+              {idx === 0 ? null : <BreadcrumbSeparator>/</BreadcrumbSeparator>}
+              <BreadcrumbItem>
+                {isLast ? (
+                  <BreadcrumbPage>{segment}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink asChild>
+                    <Link to={path}>{segment}</Link>
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+            </Fragment>
+          );
+        })}
       </BreadcrumbList>
     </Breadcrumb>
   );

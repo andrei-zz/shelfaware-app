@@ -1,11 +1,12 @@
 import type { Route } from "./+types/route";
 
-import { redirect, useFetcher } from "react-router";
+import { redirect } from "react-router";
+import { DateTime } from "luxon";
+import { getItems, getTag } from "~/actions/select.server";
+import { updateTag, updateTagSchema } from "~/actions/update.server";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Button } from "~/components/ui/button";
-import { getItems, getTag } from "~/actions/select.server";
-import { updateTag, updateTagSchema } from "~/actions/update.server";
 import {
   Select,
   SelectContent,
@@ -13,11 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { DateTime } from "luxon";
+import { Main } from "~/components/main";
+import { Form } from "~/components/form";
 
 export const meta = ({ params }: Route.MetaArgs) => {
   return [
-    { title: `Edit Tag${params.tagId ? " " + params.tagId : ""} - ShelfAware` },
+    {
+      title: `Edit Tag${params.tagId ? " #" + params.tagId : ""} - ShelfAware`,
+    },
     // { name: "description", content: "ShelfAware" },
   ];
 };
@@ -56,29 +60,31 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
   return redirect("/");
 };
 
-const TagId = ({ loaderData }: Route.ComponentProps) => {
-  const fetcher = useFetcher({ key: "edit-tag" });
-
+const TagId = ({ params, loaderData }: Route.ComponentProps) => {
   return (
-    <main className="min-w-full max-h-[calc(100dvh-3rem)] p-4 flex flex-col space-y-4 prose prose-lg">
-      <div className="flex items-center justify-between">
-        <h2 className="mt-0 mb-0">Edit Tag</h2>
-      </div>
+    <Main>
       {loaderData.tag == null ? (
-        <div className="h-full w-full p-1 flex flex-col space-y-4 overflow-y-scroll scrollbar">
+        <div className="h-full w-full p-4 pb-16 flex flex-col gap-y-4 overflow-y-scroll scrollbar">
+          <div className="flex items-center justify-between">
+            <h2 className="mt-0 mb-0">{`Edit Tag${
+              params.tagId ? " #" + params.tagId : ""
+            }`}</h2>
+          </div>
           Tag not found
         </div>
       ) : (
-        <fetcher.Form
-          method="POST"
-          encType="multipart/form-data"
-          className="h-full w-full p-1 flex flex-col space-y-4 overflow-y-scroll scrollbar"
-        >
+        <Form fetcherKey="edit-tag" method="POST" encType="multipart/form-data">
+          <div className="flex items-center justify-between">
+            <h2 className="mt-0 mb-0">{`Edit Tag${
+              params.tagId ? " #" + params.tagId : ""
+            }`}</h2>
+          </div>
           <div className="flex flex-col w-full space-y-2">
             <Label htmlFor="name">ID</Label>
             <Input
               type="number"
               id="id"
+              autoComplete="off"
               readOnly
               disabled
               defaultValue={loaderData?.tag?.id}
@@ -91,6 +97,7 @@ const TagId = ({ loaderData }: Route.ComponentProps) => {
               type="text"
               id="name"
               name="name"
+              autoComplete="off"
               required
               defaultValue={loaderData?.tag?.name}
               className="w-full"
@@ -166,9 +173,9 @@ const TagId = ({ loaderData }: Route.ComponentProps) => {
           <div className="flex flex-col w-full space-y-2">
             <Button className="w-fit">Edit</Button>
           </div>
-        </fetcher.Form>
+        </Form>
       )}
-    </main>
+    </Main>
   );
 };
 export default TagId;

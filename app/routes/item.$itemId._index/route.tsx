@@ -1,29 +1,31 @@
+import type { Route } from "./+types/route";
+import { redirect } from "react-router";
+import { DateTime } from "luxon";
+import { createImageSchema, createImage } from "~/actions/insert.server";
 import {
   getImages,
   getItem,
   getTagsWithRawItems,
 } from "~/actions/select.server";
-import type { Route } from "./+types/route";
-import { redirect, useFetcher } from "react-router";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import { Checkbox } from "~/components/ui/checkbox";
-import { Button } from "~/components/ui/button";
-import { createImageSchema, createImage } from "~/actions/insert.server";
 import {
   updateItem,
   updateItemSchema,
   updateTag,
 } from "~/actions/update.server";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import { Checkbox } from "~/components/ui/checkbox";
+import { Button } from "~/components/ui/button";
 import { TagField } from "~/components/tag-field";
 import { ImageField } from "~/components/image-field";
-import { DateTime } from "luxon";
+import { Main } from "~/components/main";
+import { Form } from "~/components/form";
 
 export const meta = ({ params }: Route.MetaArgs) => {
   return [
     {
       title: `Edit Item${
-        params.itemId ? " " + params.itemId : ""
+        params.itemId ? " #" + params.itemId : ""
       } - ShelfAware`,
     },
     // { name: "description", content: "ShelfAware" },
@@ -122,29 +124,35 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
   return redirect("/");
 };
 
-const ItemId = ({ loaderData }: Route.ComponentProps) => {
-  const fetcher = useFetcher({ key: "edit-item" });
-
+const ItemId = ({ params, loaderData }: Route.ComponentProps) => {
   return (
-    <main className="min-w-full max-h-[calc(100dvh-3rem)] p-4 flex flex-col space-y-4 prose prose-lg">
-      <div className="flex items-center justify-between">
-        <h2 className="mt-0 mb-0">Edit Item</h2>
-      </div>
+    <Main>
       {loaderData.item == null ? (
-        <div className="h-full w-full p-1 flex flex-col space-y-4 overflow-y-scroll scrollbar">
-          Item not found
+        <div className="h-full w-full p-4 pb-16 flex flex-col gap-y-4 overflow-y-scroll scrollbar">
+          <div className="flex items-center justify-between">
+            <h2 className="mt-0 mb-0">{`Edit Item${
+              params.itemId ? " #" + params.itemId : ""
+            }`}</h2>
+          </div>
+          <span>Item not found</span>
         </div>
       ) : (
-        <fetcher.Form
+        <Form
+          fetcherKey="edit-item"
           method="POST"
           encType="multipart/form-data"
-          className="h-full w-full p-1 flex flex-col space-y-4 overflow-y-scroll scrollbar"
         >
+          <div className="flex items-center justify-between">
+            <h2 className="mt-0 mb-0">{`Edit Item${
+              params.itemId ? " #" + params.itemId : ""
+            }`}</h2>
+          </div>
           <div className="flex flex-col w-full space-y-2">
             <Label htmlFor="name">ID</Label>
             <Input
               type="number"
               id="id"
+              autoComplete="off"
               readOnly
               disabled
               value={loaderData?.item?.id}
@@ -157,6 +165,7 @@ const ItemId = ({ loaderData }: Route.ComponentProps) => {
               type="text"
               id="name"
               name="name"
+              autoComplete="off"
               required
               defaultValue={loaderData?.item?.name}
               className="w-full"
@@ -168,6 +177,7 @@ const ItemId = ({ loaderData }: Route.ComponentProps) => {
               type="text"
               id="description"
               name="description"
+              autoComplete="off"
               defaultValue={loaderData?.item?.description ?? undefined}
               className="w-full"
             />
@@ -281,9 +291,9 @@ const ItemId = ({ loaderData }: Route.ComponentProps) => {
           <div className="flex flex-col w-full space-y-2">
             <Button className="w-fit">Edit</Button>
           </div>
-        </fetcher.Form>
+        </Form>
       )}
-    </main>
+    </Main>
   );
 };
 export default ItemId;

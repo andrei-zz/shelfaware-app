@@ -1,8 +1,14 @@
-import { redirect, useFetcher } from "react-router";
 import type { Route } from "./+types/route";
+
+import { redirect } from "react-router";
+import {
+  createItemEvent,
+  createItemEventSchema,
+} from "~/actions/insert.server";
+import { getRawItems } from "~/actions/select.server";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
-import { getRawItems } from "~/actions/select.server";
+import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -10,14 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { Button } from "~/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
-import {
-  createItemEvent,
-  createItemEventSchema,
-} from "~/actions/insert.server";
 import { ItemEventType } from "~/components/item-event-type";
-import type { z } from "zod";
+import { Button } from "~/components/ui/button";
+import { Main } from "~/components/main";
+import { Form } from "~/components/form";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -25,20 +27,6 @@ export const meta = ({}: Route.MetaArgs) => {
     // { name: "description", content: "ShelfAware" },
   ];
 };
-
-// export const eventTypeEnum = pgEnum("event_type", ["in", "out", "moved"]);
-
-// export const itemEvents = pgTable("item_events", {
-//   id: serial("id").primaryKey(),
-//   itemId: integer("item_id")
-//     .notNull()
-//     .references(() => items.id, { onDelete: "cascade" }),
-//   eventType: eventTypeEnum("event_type").notNull(),
-//   timestamp: unixTimestamp("timestamp")
-//     .notNull()
-//     .default(sql`now()`),
-//   weight: real("weight"),
-// });
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   const items = await getRawItems();
@@ -78,18 +66,16 @@ export const action = async ({ request }: Route.ActionArgs) => {
 };
 
 const ItemEvent = ({ loaderData }: Route.ComponentProps) => {
-  const fetcher = useFetcher({ key: "create-item-event" });
-
   return (
-    <main className="min-w-full max-h-[calc(100dvh-3rem)] p-4 flex flex-col space-y-4 prose prose-lg">
-      <div className="flex items-center justify-between">
-        <h2 className="mt-0 mb-0">Create Item Event</h2>
-      </div>
-      <fetcher.Form
+    <Main>
+      <Form
+        fetcherKey="create-item-event"
         method="POST"
         encType="multipart/form-data"
-        className="h-full w-full p-1 flex flex-col space-y-4 overflow-y-scroll scrollbar"
       >
+        <div className="flex items-center justify-between">
+          <h2 className="mt-0 mb-0">Create Item Event</h2>
+        </div>
         <div className="flex flex-col w-full space-y-2">
           <Label id="itemId-label">Item</Label>
           <Select name="itemId" required>
@@ -136,8 +122,8 @@ const ItemEvent = ({ loaderData }: Route.ComponentProps) => {
         <div className="flex flex-col w-full space-y-2">
           <Button className="w-fit">Create</Button>
         </div>
-      </fetcher.Form>
-    </main>
+      </Form>
+    </Main>
   );
 };
 export default ItemEvent;
