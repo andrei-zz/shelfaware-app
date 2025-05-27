@@ -1,24 +1,33 @@
-/**
- * /api/item
- * GET: returns the item object along with type and tag objects.
- * - /api/item?id=1
- * - /api/item?tagId=1
- * - /api/item?uid=FFFFFF
- * POST: create new item, type and tag must be created beforehand.
- * - createItem
- * PATCH: update the item, some fields are not editable though.
- * - updateItem
- */
-
 import type { Route } from "./+types/route";
 
-import { z } from "zod";
-import { createItem, createItemSchema } from "~/actions/insert.server";
+import { ZodError } from "zod";
+
+import {
+  createImage,
+  createImageSchema,
+  createItem,
+  createItemSchema,
+  createItemType,
+  createItemTypeSchema,
+} from "~/actions/insert.server";
 import { getItem, getItemByTagId, getItemByUid } from "~/actions/select.server";
-import { updateItem, updateItemSchema } from "~/actions/update.server";
+import {
+  updateItem,
+  updateItemSchema,
+  updateTag,
+} from "~/actions/update.server";
+import { putS3Object } from "~/actions/s3.server";
+import {
+  coerceTimestamp,
+  makeApiSchema,
+  parseFormPayload,
+  parseJsonPayload,
+} from "~/actions/zod-utils";
+
+const PATHNAME = "/api/item";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
-  let relativeUrl: string = "/api/item";
+  let relativeUrl: string = PATHNAME;
   let id: string | null;
   let tagId: string | null;
   let uid: string | null;
@@ -29,7 +38,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     tagId = url.searchParams.get("tagId");
     uid = url.searchParams.get("uid");
   } catch (err: unknown) {
-    console.error(`${relativeUrl}:GET\n`, err, "\n");
+    console.error(`${relativeUrl}:loader\n`, err, "\n");
     return new Response("Internal Server Error", { status: 500 });
   }
 
@@ -58,7 +67,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       },
     });
   } catch (err: unknown) {
-    console.error(`${relativeUrl}\nGET:`, err, "\n");
+    console.error(`${relativeUrl}:loader\n`, err, "\n");
     return new Response("Internal Server Error", {
       status: 500,
     });
@@ -66,90 +75,198 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 };
 
 export const action = async ({ request }: Route.ActionArgs) => {
-  let relativeUrl: string = "/api/item";
+  let relativeUrl: string = PATHNAME;
   try {
     const url = new URL(request.url);
     relativeUrl = url.pathname + url.search;
   } catch (err: unknown) {
-    console.error(`${relativeUrl}\nInvalid URL:`, err, "\n");
+    console.error(`${relativeUrl}:action\n`, err, "\n");
     return new Response("Internal Server Error", {
       status: 500,
     });
   }
 
-  let payload: unknown;
+  if (request.method !== "POST" && request.method !== "PATCH") {
+    return new Response("Method Not Allowed", { status: 405 });
+  }
+
+  let payload: Record<string, unknown> = {};
+  let imageFile: File | null = null;
+  let itemTypeName: string | null = null;
+  let tagId: string | number | null = null;
   try {
-    payload = await request.json();
-    // console.log(`${relativeUrl}\nReceived payload:`, payload, "\n");
+    const reqContentType =
+      request.headers.get("Content-Type") ??
+      request.headers.get("content-type");
+    if (reqContentType?.startsWith("multipart/form-data")) {
+      const reqFormData = await request.formData();
+      const {
+        image,
+        tagId: formTagId,
+        itemTypeName: formItemTypeName,
+        ...formData
+      } = Object.fromEntries(reqFormData);
+
+      if (image instanceof File) {
+        imageFile = image;
+      }
+      if (typeof formTagId === "string") {
+        tagId = formTagId;
+      }
+      if (typeof formItemTypeName === "string") {
+        itemTypeName = formItemTypeName;
+      }
+
+      const dummy: Record<string, unknown> = {};
+      if (
+        imageFile?.size != null &&
+        imageFile.size > 0 &&
+        imageFile.size <= 10 * 1024 * 1024
+      ) {
+        dummy.imageId = 0;
+      }
+      if (itemTypeName != null) {
+        dummy.itemTypeId = 0;
+      }
+      payload = parseFormPayload(formData, [
+        { schema: makeApiSchema(createItemSchema), dummy },
+        { schema: makeApiSchema(updateItemSchema), dummy },
+      ]);
+    } else if (reqContentType?.startsWith("application/json")) {
+      const {
+        tagId: jsonTagId,
+        itemTypeName: jsonItemTypeName,
+        ...jsonData
+      } = await request.json();
+
+      if (typeof jsonTagId === "string" || typeof jsonTagId === "number") {
+        tagId = jsonTagId;
+      }
+      if (typeof jsonItemTypeName === "string") {
+        itemTypeName = jsonItemTypeName;
+      }
+
+      const dummy: Record<string, unknown> = {};
+      if (itemTypeName != null) {
+        dummy.itemTypeId = 0;
+      }
+      payload = parseJsonPayload(jsonData, [
+        { schema: makeApiSchema(createItemSchema), dummy },
+        { schema: makeApiSchema(updateItemSchema), dummy },
+      ]);
+    } else {
+      return new Response("Invalid Content-Type", { status: 400 });
+    }
   } catch (err: unknown) {
-    console.error(`${relativeUrl}\nJSON parse error:`, err, "\n");
-    return new Response("Bad Request", {
-      status: 400,
+    if (err instanceof ZodError) {
+      return Response.json(
+        { message: "Bad Request", errors: err.flatten().fieldErrors },
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    console.error(`${relativeUrl}:action\n`, err, "\n");
+    return new Response("Internal Server Error", {
+      status: 500,
     });
   }
 
-  switch (request.method) {
-    case "POST": {
-      try {
-        const parsed = createItemSchema.parse(payload);
+  if (
+    imageFile?.size != null &&
+    imageFile.size > 0 &&
+    imageFile.size <= 10 * 1024 * 1024
+  ) {
+    const s3Key = crypto.randomUUID();
+    const arrayBuffer = await imageFile.arrayBuffer();
+    const imageBuffer = Buffer.from(arrayBuffer);
+    const parsed = createImageSchema.parse({ s3Key, mimeType: imageFile.type });
+    const [image] = await Promise.all([
+      createImage(parsed),
+      ...(imageBuffer != null ? [putS3Object(s3Key, imageBuffer)] : []),
+    ]);
+    payload.imageId = image.id;
+  }
+
+  if (imageFile != null && !payload.imageId) {
+    return new Response("Invalid image file", { status: 400 });
+  }
+
+  if (itemTypeName != null) {
+    const parsed = createItemTypeSchema.parse({ name: itemTypeName });
+    const itemType = await createItemType(parsed);
+    payload.itemTypeId = itemType.id;
+  }
+
+  try {
+    switch (request.method) {
+      case "POST": {
+        const parsed = makeApiSchema(createItemSchema).parse({
+          ...payload,
+          expireAt: coerceTimestamp(payload.exireAt),
+        });
         const newItem = await createItem(parsed);
+
+        if (tagId != null && tagId !== "" && newItem != null) {
+          await updateTag({
+            id: Number(tagId),
+            itemId: newItem.id,
+          });
+        }
+
         return Response.json(newItem, {
-          status: 200,
+          status: 201,
           headers: {
             "Content-Type": "application/json",
           },
         });
-      } catch (err: unknown) {
-        console.error(`${relativeUrl}:POST\n`, err, "\n");
+      }
+      case "PATCH": {
+        const parsed = makeApiSchema(updateItemSchema).parse({
+          ...payload,
+          expireAt: coerceTimestamp(payload.exireAt),
+        });
+        const updatedItem = await updateItem(parsed);
 
-        if (err instanceof z.ZodError) {
-          return Response.json(
-            { error: "Bad Request", details: err.issues },
-            {
-              status: 400,
-              headers: { "Content-Type": "application/json" },
-            }
-          );
+        if (tagId != null && tagId !== "" && updatedItem != null) {
+          await updateTag({
+            id: Number(tagId),
+            itemId: updatedItem.id,
+          });
         }
 
-        return new Response("Internal Server Error", {
-          status: 500,
-        });
-      }
-    }
-    case "PATCH": {
-      try {
-        const parsed = updateItemSchema.parse(payload);
-        const updatedItem = await updateItem(parsed);
         return Response.json(updatedItem, {
           status: 200,
           headers: {
             "Content-Type": "application/json",
           },
         });
-      } catch (err: unknown) {
-        console.error(`${relativeUrl}:PATCH\n`, err, "\n");
-
-        if (err instanceof z.ZodError) {
-          return Response.json(
-            { error: "Bad Request", details: err.issues },
-            {
-              status: 400,
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-        }
-
-        return new Response("Internal Server Error", {
-          status: 500,
-        });
+      }
+      default: {
+        console.log(
+          `${relativeUrl}\nBlocked unallowed methods: ${request.method}\n`
+        );
+        return new Response("Method Not Allowed", { status: 405 });
       }
     }
-    default: {
-      console.log(
-        `${relativeUrl}\nBlocked unallowed methods: ${request.method}\n`
+  } catch (err: unknown) {
+    if (err instanceof ZodError) {
+      console.log("Should have caught this zod error earilier", err);
+      return Response.json(
+        { message: "Bad Request", errors: err.flatten().fieldErrors },
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
       );
-      return new Response("Method Not Allowed", { status: 405 });
     }
+
+    console.error(`${relativeUrl}:action\n`, err, "\n");
+
+    return new Response("Internal Server Error", {
+      status: 500,
+    });
   }
 };

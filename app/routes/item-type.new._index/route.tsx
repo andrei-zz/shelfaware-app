@@ -2,30 +2,24 @@ import type { Route } from "./+types/route";
 
 import { redirect, useFetcher } from "react-router";
 
-import { getItems } from "~/actions/select.server";
-
-import { Main } from "~/components/main";
 import { Form } from "~/components/form/form";
-import { Label } from "~/components/ui/label";
-import { Input } from "~/components/ui/input";
+import { Main } from "~/components/main";
 import { Button } from "~/components/ui/button";
-import { ItemField } from "~/components/form/item-field";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
-    { title: "Create Tag - ShelfAware" },
+    { title: "Create Item Type - ShelfAware" },
     // { name: "description", content: "ShelfAware" },
   ];
 };
 
-export const loader = async ({}: Route.LoaderArgs) => {
-  const items = await getItems();
-  return { items };
-};
+// export const loader = async ({}: Route.LoaderArgs) => {};
 
 export const action = async ({ request }: Route.ActionArgs) => {
-  const tagEndpoint = "/api/tag";
-  const tagApiUrl = new URL(tagEndpoint, request.url).toString();
+  const itemTypeEndpoint = "/api/item-type";
+  const itemTypeApiUrl = new URL(itemTypeEndpoint, request.url).toString();
 
   if (request.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
@@ -33,7 +27,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   const formData = await request.formData();
 
-  const res = await fetch(tagApiUrl, {
+  const res = await fetch(itemTypeApiUrl, {
     method: request.method,
     body: formData,
   });
@@ -51,25 +45,29 @@ export const action = async ({ request }: Route.ActionArgs) => {
     }
   }
 
-  const newTag = await res.json();
+  const newItemType = await res.json();
 
-  if (!newTag || !newTag.id) {
-    return new Response(`${tagEndpoint} returns corrupted data`, {
+  if (!newItemType || !newItemType.id) {
+    return new Response(`${itemTypeEndpoint} returns corrupted data`, {
       status: 500,
     });
   }
 
-  return redirect(`/tag/${newTag.id}`);
+  return redirect(`/item-type/${newItemType.id}`);
 };
 
-const NewTagPage = ({ loaderData }: Route.ComponentProps) => {
-  const fetcher = useFetcher({ key: "new-tag" });
+const NewItemTypePage = ({}: Route.ComponentProps) => {
+  const fetcher = useFetcher({ key: "new-item-type" });
 
   return (
     <Main>
-      <Form fetcherKey="new-tag" method="POST" encType="multipart/form-data">
+      <Form
+        fetcherKey="new-item-type"
+        method="POST"
+        encType="multipart/form-data"
+      >
         <div className="flex items-center justify-between">
-          <h2 className="mt-0 mb-0">Create Tag</h2>
+          <h2 className="mt-0 mb-0">Create Item Type</h2>
         </div>
         <div className="flex flex-col w-full space-y-2">
           <Label htmlFor="name">Name</Label>
@@ -83,22 +81,15 @@ const NewTagPage = ({ loaderData }: Route.ComponentProps) => {
           />
         </div>
         <div className="flex flex-col w-full space-y-2">
-          <Label htmlFor="uid">UID (in hex)</Label>
+          <Label htmlFor="description">Description</Label>
           <Input
             type="text"
-            id="uid"
-            name="uid"
+            id="description"
+            name="description"
             autoComplete="off"
-            required
-            placeholder=""
             className="w-full"
           />
         </div>
-        <ItemField
-          items={loaderData.items}
-          labelProps={{ children: "Attached item" }}
-          selectValueProps={{ placeholder: "Unattached" }}
-        />
         <div className="flex flex-col w-full space-y-2">
           <Button className="w-fit">Create</Button>
         </div>
@@ -106,4 +97,4 @@ const NewTagPage = ({ loaderData }: Route.ComponentProps) => {
     </Main>
   );
 };
-export default NewTagPage;
+export default NewItemTypePage;

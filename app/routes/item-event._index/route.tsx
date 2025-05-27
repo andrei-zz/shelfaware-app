@@ -1,8 +1,16 @@
 import type { Route } from "./+types/route";
 
 import { getItemEvents } from "~/actions/select.server";
-import { ItemEventItem } from "~/components/item-event-item";
+
 import { Main } from "~/components/main";
+import { ItemEventItem } from "~/components/item-event-item";
+
+export const meta = ({}: Route.MetaArgs) => {
+  return [
+    { title: "Item Events - ShelfAware" },
+    // { name: "description", content: "ShelfAware" },
+  ];
+};
 
 export const loader = async ({}: Route.LoaderArgs) => {
   const itemEvents = await getItemEvents();
@@ -15,7 +23,7 @@ const ItemEventsPage = ({ loaderData }: Route.ComponentProps) => {
       <div className="h-full w-full p-4 pb-16 flex flex-col gap-y-4 overflow-y-scroll scrollbar">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h2 className="mt-0 mb-0">Item events</h2>
+            <h2 className="mt-0 mb-0">Item Events</h2>
           </div>
         </div>
         {loaderData.itemEvents.length === 0

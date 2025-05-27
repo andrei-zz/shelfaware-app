@@ -1,10 +1,12 @@
-import { Tag } from "lucide-react";
 import { NavLink, useNavigate } from "react-router";
+import { Tag } from "lucide-react";
+
 import type { getItemEvent } from "~/actions/select.server";
+
 import { cn } from "~/lib/utils";
 import { CtxMenu } from "~/components/ctx-menu";
 import { ItemEventType } from "~/components/item-event-type";
-import { Image } from "./image";
+import { Image } from "~/components/image";
 
 export const ItemEventItem = ({
   itemEvent,
@@ -38,12 +40,12 @@ export const ItemEventItem = ({
                 onSelect: () => navigate(`/tag/${itemEvent.item.tag?.id}`),
               },
             ]),
-        ...(itemEvent.item?.image == null
+        ...(itemEvent?.image == null
           ? []
           : [
               {
                 label: "Edit image",
-                onSelect: () => navigate(`/image/${itemEvent.item.image?.id}`),
+                onSelect: () => navigate(`/image/${itemEvent.image?.id}`),
               },
             ]),
       ]}
@@ -61,9 +63,11 @@ export const ItemEventItem = ({
       >
         <Image
           src={
-            itemEvent.item.image == null
-              ? undefined
-              : `/api/image?id=${itemEvent.item.image.id}`
+            itemEvent.image != null
+              ? `/api/image?id=${itemEvent.image.id}`
+              : itemEvent.item.image != null
+              ? `/api/image?id=${itemEvent.item.image.id}`
+              : undefined
           }
           size="24"
         />

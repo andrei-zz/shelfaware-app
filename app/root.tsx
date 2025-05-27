@@ -15,6 +15,8 @@ import { AppSidebar } from "~/components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
 import { SidebarInsetHeader } from "~/components/sidebar/sidebar-inset-header";
 import { Main } from "./components/main";
+import { Pre } from "./components/pre";
+import { Code } from "./components/code";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -96,12 +98,12 @@ export const ErrorBoundary = ({ error }: Route.ErrorBoundaryProps) => {
   return (
     <AppLayout>
       <Main className="p-4 pb-16 flex flex-col gap-y-4">
-        {message && <h2 className="mb-0">{message}</h2>}
-        {details && <p className="m-0">{details}</p>}
+        {message && <h4 className="mb-0">{message}</h4>}
+        {details && <p className="mb-0">{details}</p>}
         {stack && (
-          <pre className="w-full p-4 overflow-x-auto">
-            <code>{stack}</code>
-          </pre>
+          <Pre className="mt-0">
+            <Code className="mb-2">{stack}</Code>
+          </Pre>
         )}
       </Main>
     </AppLayout>

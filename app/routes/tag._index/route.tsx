@@ -32,7 +32,7 @@ const TagsPage = ({ loaderData }: Route.ComponentProps) => {
           </div>
         </div>
         {loaderData.tags.length === 0
-          ? "Empty"
+          ? "No tags"
           : loaderData.tags.map((tag) => <TagItem key={tag.id} tag={tag} />)}
       </div>
     </Main>

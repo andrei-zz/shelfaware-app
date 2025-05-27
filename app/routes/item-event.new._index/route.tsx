@@ -1,25 +1,20 @@
 import type { Route } from "./+types/route";
 
-import { redirect } from "react-router";
-import {
-  createItemEvent,
-  createItemEventSchema,
-} from "~/actions/insert.server";
-import { getRawItems } from "~/actions/select.server";
+import { redirect, useFetcher } from "react-router";
+
+import { eventTypeEnum } from "~/database/schema";
+import { getImages, getItems } from "~/actions/select.server";
+
+import { Main } from "~/components/main";
+import { Form } from "~/components/form/form";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
-import { ItemEventType } from "~/components/item-event-type";
 import { Button } from "~/components/ui/button";
-import { Main } from "~/components/main";
-import { Form } from "~/components/form";
+import { ImageField } from "~/components/form/image-field";
+import { PositionFieldset } from "~/components/form/position-fieldset";
+import { ItemField } from "~/components/form/item-field";
+import { ItemEventType } from "~/components/item-event-type";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -28,73 +23,65 @@ export const meta = ({}: Route.MetaArgs) => {
   ];
 };
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-  const items = await getRawItems();
-  return { items };
+export const loader = async ({}: Route.LoaderArgs) => {
+  const items = await getItems();
+  const images = await getImages();
+  return { items, images };
 };
 
 export const action = async ({ request }: Route.ActionArgs) => {
+  const itemEventEndpoint = "/api/item-event";
+  const itemEventApiUrl = new URL(itemEventEndpoint, request.url).toString();
+
   if (request.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
   const formData = await request.formData();
 
-  const itemEventFormData: Record<string, FormDataEntryValue | null> = {};
-  itemEventFormData.itemId = formData.get("itemId");
-  itemEventFormData.eventType = formData.get("eventType");
-  itemEventFormData.weight = formData.get("weight");
+  const res = await fetch(itemEventApiUrl, {
+    method: request.method,
+    body: formData,
+  });
 
-  const itemEventData: Record<string, unknown> = {
-    ...itemEventFormData,
-    itemId:
-      itemEventFormData.itemId != null && itemEventFormData.itemId !== ""
-        ? Number(itemEventFormData.itemId)
-        : null,
-    weight:
-      itemEventFormData.weight != null && itemEventFormData.weight !== ""
-        ? Number(itemEventFormData.weight)
-        : null,
-  };
+  if (!res.ok) {
+    if (
+      (
+        res.headers.get("Content-Type") ?? res.headers.get("content-type")
+      )?.startsWith("application/json")
+    ) {
+      const resError = await res.json();
+      return Response.json(resError, { status: res.status });
+    } else {
+      return new Response(res.body, { status: res.status });
+    }
+  }
 
-  // console.log("itemData", itemData);
+  const newItemEvent = await res.json();
 
-  const parsed = createItemEventSchema.parse(itemEventData);
-  const newItem = await createItemEvent(parsed);
+  if (!newItemEvent || !newItemEvent.id) {
+    return new Response(`${itemEventEndpoint} returns corrupted data`, {
+      status: 500,
+    });
+  }
 
-  return redirect("/");
+  return redirect(`/item-event`);
 };
 
-const ItemEvent = ({ loaderData }: Route.ComponentProps) => {
+const NewItemEventPage = ({ loaderData }: Route.ComponentProps) => {
+  const fetcher = useFetcher({ key: "new-item-event" });
+
   return (
     <Main>
       <Form
-        fetcherKey="create-item-event"
+        fetcherKey="new-item-event"
         method="POST"
         encType="multipart/form-data"
       >
         <div className="flex items-center justify-between">
           <h2 className="mt-0 mb-0">Create Item Event</h2>
         </div>
-        <div className="flex flex-col w-full space-y-2">
-          <Label id="itemId-label">Item</Label>
-          <Select name="itemId" required>
-            <SelectTrigger aria-labelledby="itemId-label" className="w-full">
-              <SelectValue placeholder="Select item" />
-            </SelectTrigger>
-            <SelectContent>
-              {loaderData.items.map((item) => (
-                <SelectItem key={item.id} value={item.id.toString()}>
-                  {item.id}: {item.name} (
-                  {item.currentWeight == null
-                    ? "no weight"
-                    : `${item.currentWeight} g`}
-                  )
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <ItemField items={loaderData.items} required />
         <div className="flex flex-col w-full space-y-2">
           <Label>Event type</Label>
           <RadioGroup
@@ -102,7 +89,7 @@ const ItemEvent = ({ loaderData }: Route.ComponentProps) => {
             required
             className="flex flex-col w-full items-center gap-2"
           >
-            {(["in", "out", "moved"] as const).map((type) => (
+            {eventTypeEnum.enumValues.map((type) => (
               <div
                 key={`eventType-${type}`}
                 className="flex w-full items-center space-x-2"
@@ -119,6 +106,13 @@ const ItemEvent = ({ loaderData }: Route.ComponentProps) => {
           <Label htmlFor="weight">Current item weight (in grams)</Label>
           <Input type="number" id="weight" name="weight" className="w-full" />
         </div>
+        <PositionFieldset />
+        <ImageField
+          imageFileFieldName="image"
+          imageIdFieldName="imageId"
+          label="Image"
+          images={loaderData.images}
+        />
         <div className="flex flex-col w-full space-y-2">
           <Button className="w-fit">Create</Button>
         </div>
@@ -126,4 +120,4 @@ const ItemEvent = ({ loaderData }: Route.ComponentProps) => {
     </Main>
   );
 };
-export default ItemEvent;
+export default NewItemEventPage;

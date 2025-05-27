@@ -1,13 +1,19 @@
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, type ExtractTablesWithRelations } from "drizzle-orm";
+import type { PgTransaction } from "drizzle-orm/pg-core";
+import type { NeonQueryResultHKT } from "drizzle-orm/neon-serverless";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { db } from "~/database/db.server";
-import { items, itemTypes, itemEvents, tags, images } from "~/database/schema";
-
-const uidSchema = z.string().regex(/^[0-9a-f]+$/, {
-  message: "UID must be lowercase hex (0-9, a-f only)",
-});
+import {
+  uidSchema,
+  items,
+  itemTypes,
+  itemEvents,
+  tags,
+  images,
+} from "~/database/schema";
+import { updateItem } from "./update.server";
 
 export const createItemSchema = createInsertSchema(items).omit({
   id: true,
@@ -17,9 +23,18 @@ export const createItemSchema = createInsertSchema(items).omit({
 });
 export const createItem = async (
   // Exclude the id and timestamps
-  data: z.infer<typeof createItemSchema>
+  data: z.infer<typeof createItemSchema>,
+  tx?:
+    | typeof db
+    | PgTransaction<
+        NeonQueryResultHKT,
+        typeof import("~/database/schema"),
+        ExtractTablesWithRelations<typeof import("~/database/schema")>
+      >
 ) => {
-  if (data.originalWeight != null && data.currentWeight == null) {
+  const database = tx ?? db;
+
+  if (data.currentWeight == null) {
     data.currentWeight = data.originalWeight;
   }
 
@@ -30,97 +45,83 @@ export const createItem = async (
     data.currentWeight = null;
   }
 
-  return await db
-    .insert(items)
-    .values(data)
-    .returning()
-    .then((value) => value[0]);
+  const createdItems = await database.insert(items).values(data).returning();
+  if (createdItems.length !== 1) {
+    throw new Error("Created != 1 items");
+  }
+  return createdItems[0];
 };
 
-// export const createItemTypeSchema = createInsertSchema(itemTypes).omit({
-//   id: true,
-// });
-// export const createItemType = async (
-//   data: z.infer<typeof createItemTypeSchema>
-// ) =>
-//   await db
-//     .insert(itemTypes)
-//     .values(data)
-//     .returning()
-//     .then((value) => value[0]);
+export const createItemTypeSchema = createInsertSchema(itemTypes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export const createItemType = async (
+  data: z.infer<typeof createItemTypeSchema>
+) => {
+  const createdItemTypes = await db.insert(itemTypes).values(data).returning();
+  if (createdItemTypes.length !== 1) {
+    throw new Error("Created != 1 item types");
+  }
+  return createdItemTypes[0];
+};
 
-export const createItemEventSchema = createInsertSchema(itemEvents)
-  .omit({
-    id: true,
-    timestamp: true,
-  })
-  .extend({ uid: uidSchema.optional() });
+export const createItemEventSchema = createInsertSchema(itemEvents).omit({
+  id: true,
+  timestamp: true,
+});
 export const createItemEvent = async (
   data: z.infer<typeof createItemEventSchema>
 ) => {
-  if (data.weight != null && data.weight < 0) {
-    data.weight = null;
-  }
+  return await db.transaction(async (tx) => {
+    if (data.weight != null && data.weight < 0) {
+      data.weight = null;
+    }
 
-  // Always insert the event
-  const [event] = await db.insert(itemEvents).values(data).returning();
+    // Always insert the event
+    const createdEvents = await tx.insert(itemEvents).values(data).returning();
+    if (createdEvents.length !== 1) {
+      throw new Error("Created != 1 item events");
+    }
+    const event = createdEvents[0];
 
-  const updates: Record<string, unknown> = {};
+    const updates: Record<string, unknown> = {};
 
-  if (data.eventType === "in") {
-    updates.isPresent = true;
-    updates.updatedAt = sql`now()`;
+    if (data.eventType === "in") {
+      updates.isPresent = true;
+      updates.updatedAt = sql`now()`;
+    }
+
+    if (data.eventType === "out") {
+      updates.isPresent = false;
+      updates.updatedAt = sql`now()`;
+    }
+
     if (data.weight != null) {
       updates.currentWeight = data.weight;
+      updates.updatedAt = sql`now()`;
     }
-  }
 
-  if (data.eventType === "out") {
-    updates.isPresent = false;
-    updates.updatedAt = sql`now()`;
-    if (data.weight != null) {
-      updates.currentWeight = data.weight;
+    if (data.floor != null) {
+      updates.floor = data.floor;
+      updates.updatedAt = sql`now()`;
     }
-  }
+    if (data.row != null) {
+      updates.row = data.row;
+      updates.updatedAt = sql`now()`;
+    }
+    if (data.col != null) {
+      updates.col = data.col;
+      updates.updatedAt = sql`now()`;
+    }
 
-  if (data.eventType === "moved" && data.weight != null) {
-    updates.currentWeight = data.weight;
-    updates.updatedAt = sql`now()`;
-  }
+    if (Object.keys(updates).length > 0) {
+      await updateItem({ id: data.itemId, ...updates }, tx);
+    }
 
-  if (Object.keys(updates).length > 0) {
-    await db.update(items).set(updates).where(eq(items.id, data.itemId));
-  }
-
-  return event;
-};
-
-export const createItemAndTagByUidSchema = createItemEventSchema.omit({
-  itemId: true,
-});
-export const createItemAndTagByUid = async (
-  data: z.infer<typeof createItemAndTagByUidSchema>
-) => {
-  if (!data.uid) {
-    throw new Error("UID is required");
-  }
-  if (data.weight != null && data.weight < 0) {
-    data.weight = null;
-  }
-
-  const item = await createItem({
-    name: `Item ${data.uid}`,
-    originalWeight: data.weight,
-    isPresent: data.eventType === "in" || data.eventType === "moved",
+    return event;
   });
-
-  const tag = await createTag({
-    name: `Tag ${data.uid}`,
-    uid: data.uid,
-    itemId: item.id,
-  });
-
-  return { item, tag };
 };
 
 export const createTagSchema = createInsertSchema(tags)
@@ -128,40 +129,102 @@ export const createTagSchema = createInsertSchema(tags)
     id: true,
     createdAt: true,
     attachedAt: true,
+    updatedAt: true,
   })
   .extend({
     uid: uidSchema,
   });
-export const createTag = async (data: z.infer<typeof createTagSchema>) => {
+const createTagHelper = async (
+  data: z.infer<typeof createTagSchema>,
+  tx?:
+    | typeof db
+    | PgTransaction<
+        NeonQueryResultHKT,
+        typeof import("~/database/schema"),
+        ExtractTablesWithRelations<typeof import("~/database/schema")>
+      >
+) => {
+  const database = tx ?? db;
+
   const attachedAt = data.itemId != null ? sql`now()` : null;
 
   if (data.itemId != null) {
-    await db
-      .update(tags)
-      .set({ itemId: null, attachedAt: null })
-      .where(eq(tags.itemId, data.itemId));
+    await Promise.all([
+      database
+        .update(tags)
+        .set({ itemId: null, attachedAt: null, updatedAt: sql`now()` })
+        .where(eq(tags.itemId, data.itemId)),
 
-    await db
-      .update(items)
-      .set({ updatedAt: sql`now()` })
-      .where(eq(items.id, data.itemId));
+      updateItem({ id: data.itemId }, tx),
+    ]);
   }
 
-  return await db
+  const createdTags = await database
     .insert(tags)
-    .values({ ...data, attachedAt })
-    .returning()
-    .then((value) => value[0]);
+    .values({ ...data, attachedAt, updatedAt: sql`now()` })
+    .returning();
+  if (createdTags.length !== 1) {
+    throw new Error("Created != 1 tags");
+  }
+  return createdTags[0];
+};
+export const createTag = async (data: z.infer<typeof createTagSchema>) => {
+  return await db.transaction(async (tx) => createTagHelper(data, tx));
+};
+
+export const createItemAndTagByUidSchema = createItemEventSchema
+  .omit({ itemId: true })
+  .extend({ uid: uidSchema });
+export const createItemAndTagByUid = async (
+  data: z.infer<typeof createItemAndTagByUidSchema>
+) => {
+  return await db.transaction(async (tx) => {
+    if (data.weight != null && data.weight < 0) {
+      data.weight = null;
+    }
+
+    const item = await createItem(
+      {
+        name: `Item ${data.uid}`,
+        originalWeight: data.weight,
+        isPresent: data.eventType === "in" || data.eventType === "moved",
+      },
+      tx
+    );
+
+    const tag = await createTagHelper(
+      {
+        name: `Tag ${data.uid}`,
+        uid: data.uid,
+        itemId: item.id,
+      },
+      tx
+    );
+
+    return { item, tag };
+  });
 };
 
 export const createImageSchema = createInsertSchema(images).omit({
   id: true,
   createdAt: true,
-  updatedAt: true,
+  replacedAt: true,
 });
-export const createImage = async (data: z.infer<typeof createImageSchema>) =>
-  await db
-    .insert(images)
-    .values(data)
-    .returning()
-    .then((value) => value[0]);
+export const createImage = async (
+  data: z.infer<typeof createImageSchema>,
+  tx?:
+    | typeof db
+    | PgTransaction<
+        NeonQueryResultHKT,
+        typeof import("~/database/schema"),
+        ExtractTablesWithRelations<typeof import("~/database/schema")>
+      >
+) => {
+  const database = tx ?? db;
+
+  const createdImages = await database.insert(images).values(data).returning();
+  if (createdImages.length !== 1) {
+    throw new Error("Created != 1 images");
+  }
+  return createdImages[0];
+};

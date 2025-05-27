@@ -4,9 +4,9 @@ import { DateTime } from "luxon";
 import type { getImages } from "~/actions/select.server";
 
 import { cn } from "~/lib/utils";
+import { useSidebar } from "~/components/ui/sidebar";
 import { Image } from "~/components/image";
 import { CtxMenu } from "~/components/ctx-menu";
-import { useSidebar } from "./ui/sidebar";
 
 export const ImageItem = ({
   image,
@@ -38,7 +38,7 @@ export const ImageItem = ({
         to={`/image/${image.id}`}
         className={({ isPending }) =>
           cn(
-            "py-2 flex items-center rounded hover:bg-accent border no-underline",
+            "py-2 flex items-center overflow-x-hidden rounded hover:bg-accent border no-underline",
             isPending ? "opacity-60  pointer-events-none" : undefined
           )
         }
@@ -57,10 +57,17 @@ export const ImageItem = ({
           <span className="text-sm font-light">
             {image.description ?? "No description"}
           </span>
-          {image.updatedAt == null ? null : (
+          {image.createdAt == null ? null : (
             <span className="text-sm font-light">
-              {`Uploaded at: ${DateTime.fromMillis(
-                image.updatedAt
+              {`Created at: ${DateTime.fromMillis(
+                image.createdAt
+              ).toLocaleString()}`}
+            </span>
+          )}
+          {image.replacedAt == null ? null : (
+            <span className="text-sm font-light">
+              {`Replaced at: ${DateTime.fromMillis(
+                image.replacedAt
               ).toLocaleString()}`}
             </span>
           )}

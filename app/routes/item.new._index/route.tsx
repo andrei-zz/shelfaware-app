@@ -1,22 +1,21 @@
 import type { Route } from "./+types/route";
 
-import { redirect } from "react-router";
+import { redirect, useFetcher } from "react-router";
 import {
-  createImage,
-  createImageSchema,
-  createItem,
-  createItemSchema,
-} from "~/actions/insert.server";
-import { getImages, getTagsWithRawItems } from "~/actions/select.server";
-import { updateTag } from "~/actions/update.server";
+  getImages,
+  getItemTypes,
+  getTagsWithRawItems,
+} from "~/actions/select.server";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
-import { TagField } from "~/components/tag-field";
-import { ImageField } from "~/components/image-field";
+import { TagField } from "~/components/form/tag-field";
+import { ImageField } from "~/components/form/image-field";
 import { Main } from "~/components/main";
-import { Form } from "~/components/form";
+import { Form } from "~/components/form/form";
+import { PositionFieldset } from "~/components/form/position-fieldset";
+import { ItemTypeField } from "~/components/form/item-type-field";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -25,97 +24,59 @@ export const meta = ({}: Route.MetaArgs) => {
   ];
 };
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
+export const loader = async ({}: Route.LoaderArgs) => {
   const tags = await getTagsWithRawItems();
   const images = await getImages();
+  const itemTypes = await getItemTypes();
 
-  return { tags, images };
+  return { tags, images, itemTypes };
 };
 
 export const action = async ({ request }: Route.ActionArgs) => {
+  const itemEndpoint = "/api/item";
+  const itemApiUrl = new URL(itemEndpoint, request.url).toString();
+
   if (request.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
   const formData = await request.formData();
 
-  const imageFormData: Record<string, unknown> = {};
-  const imageFile = formData.get("image");
-  // console.log("imageFile", imageFile, typeof imageFile);
-  if (imageFile instanceof File && imageFile.size > 0) {
-    const arrayBuffer = await imageFile.arrayBuffer();
-    imageFormData.data = Buffer.from(arrayBuffer);
-    imageFormData.mimeType = imageFile.type;
+  const res = await fetch(itemApiUrl, {
+    method: request.method,
+    body: formData,
+  });
+
+  if (!res.ok) {
+    if (
+      (
+        res.headers.get("Content-Type") ?? res.headers.get("content-type")
+      )?.startsWith("application/json")
+    ) {
+      const resError = await res.json();
+      return Response.json(resError, { status: res.status });
+    } else {
+      return new Response(res.body, { status: res.status });
+    }
   }
 
-  let newImage: Awaited<ReturnType<typeof createImage>> | null = null;
-  if (imageFormData.data != null) {
-    // console.log("imageFormData.data", imageFormData.data);
-    const parsed = createImageSchema.parse(imageFormData);
-    newImage = await createImage(parsed);
-  }
-  // console.log("newImage", newImage);
+  const newItem = await res.json();
 
-  const itemFormData: Record<string, FormDataEntryValue | null> = {};
-  itemFormData.name = formData.get("name");
-  itemFormData.description = formData.get("description");
-  itemFormData.expireAt = formData.get("expireAt");
-  itemFormData.originalWeight = formData.get("originalWeight");
-  itemFormData.currentWeight = formData.get("currentWeight");
-  itemFormData.itemTypeId = formData.get("itemTypeId");
-  itemFormData.isPresent = formData.get("isPresent");
-  itemFormData.imageId = formData.get("imageId");
-
-  const itemData: Record<string, unknown> = {
-    ...itemFormData,
-    expireAt:
-      typeof itemFormData.expireAt === "string" && itemFormData.expireAt
-        ? new Date(itemFormData.expireAt).getTime()
-        : null,
-    originalWeight:
-      itemFormData.originalWeight != null && itemFormData.originalWeight !== ""
-        ? Number(itemFormData.originalWeight)
-        : null,
-    currentWeight:
-      itemFormData.currentWeight != null && itemFormData.currentWeight !== ""
-        ? Number(itemFormData.currentWeight)
-        : null,
-    isPresent: Boolean(itemFormData.isPresent),
-    imageId:
-      newImage?.id ??
-      (itemFormData.imageId != null && itemFormData.imageId !== ""
-        ? Number(itemFormData.imageId)
-        : undefined),
-  };
-
-  if (itemData.originalWeight != null && itemData.currentWeight == null) {
-    itemData.currentWeight = itemData.originalWeight;
-  }
-
-  // console.log("itemData", itemData);
-
-  const parsed = createItemSchema.parse(itemData);
-  const newItem = await createItem(parsed);
-
-  const formTagId = formData.get("tagId");
-  if (formTagId != null && formTagId !== "") {
-    const newTag = await updateTag({
-      id: Number(formTagId),
-      itemId: newItem.id,
+  if (!newItem || !newItem.id) {
+    return new Response(`${itemEndpoint} returns corrupted data`, {
+      status: 500,
     });
   }
 
-  return redirect("/");
+  return redirect(`/item/${newItem.id}`);
 };
 
-const CreateItem = ({ loaderData }: Route.ComponentProps) => {
+const NewItemPage = ({ loaderData }: Route.ComponentProps) => {
+  const fetcher = useFetcher({ key: "new-item" });
+
   return (
     <Main>
-      <Form
-        fetcherKey="create-item"
-        method="POST"
-        encType="multipart/form-data"
-      >
+      <Form fetcherKey="new-item" method="POST" encType="multipart/form-data">
         <div className="flex items-center justify-between">
           <h2 className="mt-0 mb-0">Create Item</h2>
         </div>
@@ -130,6 +91,12 @@ const CreateItem = ({ loaderData }: Route.ComponentProps) => {
             className="w-full"
           />
         </div>
+        <ItemTypeField
+          itemTypeIdFieldName="itemTypeId"
+          itemTypeNameFieldName="itemTypeName"
+          label="Type"
+          itemTypes={loaderData.itemTypes ?? undefined}
+        />
         <div className="flex flex-col w-full space-y-2">
           <Label htmlFor="description">Description</Label>
           <Input
@@ -169,27 +136,14 @@ const CreateItem = ({ loaderData }: Route.ComponentProps) => {
             className="w-full"
           />
         </div>
-        {/* <div className="flex flex-col w-full space-y-2">
-          <Label htmlFor="itemTypeId">Item type ID</Label>
-          <Input
-            type="number"
-            id="itemTypeId"
-            name="itemTypeId"
-            className="w-full"
-          />
-        </div> */}
-        <div className="flex w-full items-center space-x-2">
+        <div className="my-0.5 flex w-full items-center space-x-2">
           <Checkbox id="isPresent" name="isPresent" defaultChecked />
           <Label htmlFor="isPresent">
             Mark item as currently in the fridge
           </Label>
         </div>
-        <TagField
-          name="tagId"
-          tags={loaderData.tags}
-          label="Attached tag"
-          placeholder="Untagged"
-        />
+        <PositionFieldset />
+        <TagField name="tagId" tags={loaderData.tags} />
         <ImageField
           imageFileFieldName="image"
           imageIdFieldName="imageId"
@@ -197,10 +151,12 @@ const CreateItem = ({ loaderData }: Route.ComponentProps) => {
           images={loaderData.images}
         />
         <div className="flex flex-col w-full space-y-2">
-          <Button className="w-fit">Create</Button>
+          <Button type="submit" className="w-fit">
+            Create
+          </Button>
         </div>
       </Form>
     </Main>
   );
 };
-export default CreateItem;
+export default NewItemPage;

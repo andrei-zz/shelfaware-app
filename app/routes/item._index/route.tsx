@@ -1,6 +1,6 @@
 import type { Route } from "./+types/route";
 
-import { getPresentItems } from "~/actions/select.server";
+import { getItems } from "~/actions/select.server";
 import { FridgeItem } from "~/components/fridge-item";
 import { Main } from "~/components/main";
 
@@ -17,8 +17,8 @@ export const meta = ({}: Route.MetaArgs) => {
 //   };
 // }
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-  const items = await getPresentItems();
+export const loader = async ({}: Route.LoaderArgs) => {
+  const items = await getItems();
   return { items };
 };
 

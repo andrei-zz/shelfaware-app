@@ -1,12 +1,12 @@
 import type { Route } from "./+types/route";
 
-import { Link, redirect } from "react-router";
-import { createImage, createImageSchema } from "~/actions/insert.server";
+import { redirect, useFetcher } from "react-router";
+
+import { Main } from "~/components/main";
+import { Form } from "~/components/form/form";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
-import { Main } from "~/components/main";
-import { Form } from "~/components/form";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -16,43 +16,50 @@ export const meta = ({}: Route.MetaArgs) => {
 };
 
 export const action = async ({ request }: Route.ActionArgs) => {
+  const imageEndpoint = "/api/image";
+  const imageApiUrl = new URL(imageEndpoint, request.url).toString();
+
   if (request.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
   const formData = await request.formData();
 
-  const imageData: Record<string, unknown> = {};
-  imageData.title = formData.get("title");
-  imageData.description = formData.get("description");
-  const imageFile = formData.get("image");
-  // console.log("imageFile", imageFile, typeof imageFile);
-  if (imageFile instanceof File && imageFile.size > 0) {
-    const arrayBuffer = await imageFile.arrayBuffer();
-    imageData.data = Buffer.from(arrayBuffer);
-    imageData.mimeType = imageFile.type;
+  const res = await fetch(imageApiUrl, {
+    method: request.method,
+    body: formData,
+  });
+
+  if (!res.ok) {
+    if (
+      (
+        res.headers.get("Content-Type") ?? res.headers.get("content-type")
+      )?.startsWith("application/json")
+    ) {
+      const resError = await res.json();
+      return Response.json(resError, { status: res.status });
+    } else {
+      return new Response(res.body, { status: res.status });
+    }
   }
 
-  if (imageData.data == null) {
-    return new Response("Invalid image file", { status: 400 });
+  const newImage = await res.json();
+
+  if (!newImage || !newImage.id) {
+    return new Response(`${imageEndpoint} returns corrupted data`, {
+      status: 500,
+    });
   }
 
-  // console.log("imageFormData.data", imageFormData.data);
-  const parsed = createImageSchema.parse(imageData);
-  const newImage = await createImage(parsed);
-  // console.log("newImage", newImage);
-
-  return redirect("/");
+  return redirect(`/image/${newImage.id}`);
 };
 
-const ImagePage = ({}: Route.ComponentProps) => {
+const NewImagePage = ({}: Route.ComponentProps) => {
+  const fetcher = useFetcher({ key: "new-image" });
+
   return (
     <Main>
-      <Form
-        fetcherKey="create-image"
-        method="POST"
-        encType="multipart/form-data"
-      >
+      <Form fetcherKey="new-image" method="POST" encType="multipart/form-data">
         <div className="flex items-center justify-between">
           <h2 className="mt-0 mb-0">Create Image</h2>
         </div>
@@ -93,4 +100,4 @@ const ImagePage = ({}: Route.ComponentProps) => {
     </Main>
   );
 };
-export default ImagePage;
+export default NewImagePage;

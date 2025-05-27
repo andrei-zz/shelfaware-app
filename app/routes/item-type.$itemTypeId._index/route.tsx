@@ -3,43 +3,43 @@ import type { Route } from "./+types/route";
 import { replace, useFetcher } from "react-router";
 import { DateTime } from "luxon";
 
-import { getItems, getTag } from "~/actions/select.server";
+import { getItemType } from "~/actions/select.server";
 
 import { Main } from "~/components/main";
 import { Form } from "~/components/form/form";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
-import { SelectItem } from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
-import { ItemField } from "~/components/form/item-field";
 
 export const meta = ({ params }: Route.MetaArgs) => {
   return [
     {
-      title: `Edit Tag${params.tagId ? " #" + params.tagId : ""} - ShelfAware`,
+      title: `Edit Item Type${
+        params.itemTypeId ? " #" + params.itemTypeId : ""
+      } - ShelfAware`,
     },
     // { name: "description", content: "ShelfAware" },
   ];
 };
 
 export const loader = async ({ params }: Route.LoaderArgs) => {
-  const tag = await getTag(Number(params.tagId));
-  const items = await getItems();
-  return { tag, items };
+  const itemType = await getItemType(Number(params.itemTypeId));
+
+  return { itemType };
 };
 
 export const action = async ({ params, request }: Route.ActionArgs) => {
-  const tagEndpoint = "/api/tag";
-  const tagApiUrl = new URL(tagEndpoint, request.url).toString();
+  const itemTypeEndpoint = "/api/item-type";
+  const itemTypeApiUrl = new URL(itemTypeEndpoint, request.url).toString();
 
   if (request.method !== "PATCH") {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
   const formData = await request.formData();
-  formData.append("id", params.tagId);
+  formData.append("id", params.itemTypeId);
 
-  const res = await fetch(tagApiUrl, {
+  const res = await fetch(itemTypeApiUrl, {
     method: request.method,
     body: formData,
   });
@@ -57,10 +57,10 @@ export const action = async ({ params, request }: Route.ActionArgs) => {
     }
   }
 
-  const newTag = await res.json();
+  const newItemType = await res.json();
 
-  if (!newTag || !newTag.id) {
-    return new Response(`${tagEndpoint} returns corrupted data`, {
+  if (!newItemType || !newItemType.id) {
+    return new Response(`${itemTypeEndpoint} returns corrupted data`, {
       status: 500,
     });
   }
@@ -68,29 +68,29 @@ export const action = async ({ params, request }: Route.ActionArgs) => {
   return null;
 };
 
-const EditTagPage = ({ params, loaderData }: Route.ComponentProps) => {
-  const fetcher = useFetcher({ key: "edit-tag" });
+const EditItemTypePage = ({ params, loaderData }: Route.ComponentProps) => {
+  const fetcher = useFetcher({ key: "edit-item-type" });
 
   return (
     <Main>
-      {loaderData.tag == null ? (
+      {loaderData.itemType == null ? (
         <div className="h-full w-full p-4 pb-16 flex flex-col gap-y-4 overflow-y-scroll scrollbar">
           <div className="flex items-center justify-between">
-            <h2 className="mt-0 mb-0">{`Edit Tag${
-              params.tagId ? " #" + params.tagId : ""
+            <h2 className="mt-0 mb-0">{`Edit Item Type${
+              params.itemTypeId ? " #" + params.itemTypeId : ""
             }`}</h2>
           </div>
-          Tag not found
+          <span>Item type not found</span>
         </div>
       ) : (
         <Form
-          fetcherKey="edit-tag"
+          fetcherKey="edit-item-type"
           method="PATCH"
           encType="multipart/form-data"
         >
           <div className="flex items-center justify-between">
-            <h2 className="mt-0 mb-0">{`Edit Tag${
-              params.tagId ? " #" + params.tagId : ""
+            <h2 className="mt-0 mb-0">{`Edit Item Type${
+              params.itemTypeId ? " #" + params.itemTypeId : ""
             }`}</h2>
           </div>
           <div className="flex flex-col w-full space-y-2">
@@ -101,7 +101,7 @@ const EditTagPage = ({ params, loaderData }: Route.ComponentProps) => {
               autoComplete="off"
               readOnly
               disabled
-              defaultValue={loaderData.tag?.id}
+              value={loaderData.itemType?.id}
               className="w-full"
             />
           </div>
@@ -113,52 +113,32 @@ const EditTagPage = ({ params, loaderData }: Route.ComponentProps) => {
               name="name"
               autoComplete="off"
               required
-              defaultValue={loaderData.tag?.name}
+              defaultValue={loaderData.itemType?.name}
               className="w-full"
             />
           </div>
           <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="uid">UID (in hex)</Label>
+            <Label htmlFor="description">Description</Label>
             <Input
               type="text"
-              id="uid"
-              readOnly
-              disabled
-              placeholder="DE AD BE EF"
-              defaultValue={loaderData.tag?.uid}
+              id="description"
+              name="description"
+              autoComplete="off"
+              defaultValue={loaderData.itemType?.description ?? undefined}
               className="w-full"
             />
           </div>
-          <ItemField
-            items={loaderData.items}
-            item={loaderData.tag?.item ?? undefined}
-            mapFunction={(item) => (
-              <SelectItem key={item.id} value={item.id.toString()}>
-                {`#${item.id}: ${item.name}${
-                  item.currentWeight == null ? "" : `, ${item.currentWeight} g`
-                }${
-                  item.tag == null
-                    ? ""
-                    : item.tag.id === loaderData.tag?.id
-                    ? " (attached to this tag)"
-                    : ` (attached to ${item.tag.name}, UID: ${item.tag.uid})`
-                }`}
-              </SelectItem>
-            )}
-            labelProps={{ children: "Attached item" }}
-            selectValueProps={{ placeholder: "Unattached" }}
-          />
           <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="createdAt">Creation date</Label>
+            <Label htmlFor="createdAt">Item type creation date</Label>
             <Input
               type="date"
               id="createdAt"
               readOnly
               disabled
               defaultValue={
-                loaderData.tag?.createdAt != null
+                loaderData.itemType?.createdAt != null
                   ? DateTime.fromMillis(
-                      loaderData.tag?.createdAt
+                      loaderData.itemType?.createdAt
                     ).toISODate() ?? undefined
                   : undefined
               }
@@ -166,16 +146,16 @@ const EditTagPage = ({ params, loaderData }: Route.ComponentProps) => {
             />
           </div>
           <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="attachedAt">Attached date</Label>
+            <Label htmlFor="updatedAt">Last updated date</Label>
             <Input
               type="date"
-              id="attachedAt"
+              id="updatedAt"
               readOnly
               disabled
               defaultValue={
-                loaderData.tag?.attachedAt != null
+                loaderData.itemType?.updatedAt != null
                   ? DateTime.fromMillis(
-                      loaderData.tag?.attachedAt
+                      loaderData.itemType?.updatedAt
                     ).toISODate() ?? undefined
                   : undefined
               }
@@ -190,4 +170,4 @@ const EditTagPage = ({ params, loaderData }: Route.ComponentProps) => {
     </Main>
   );
 };
-export default EditTagPage;
+export default EditItemTypePage;

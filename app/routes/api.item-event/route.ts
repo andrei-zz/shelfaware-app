@@ -1,22 +1,30 @@
 import type { Route } from "./+types/route";
 
 import { z } from "zod";
+
+import { uidSchema } from "~/database/schema";
 import {
+  createImage,
+  createImageSchema,
   createItemAndTagByUid,
   createItemEvent,
   createItemEventSchema,
 } from "~/actions/insert.server";
 import { getItemByUid, getItemEvent } from "~/actions/select.server";
+import { putS3Object } from "~/actions/s3.server";
+import { makeApiSchema } from "~/actions/zod-utils";
+
+const PATHNAME = "/api/item-event";
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
-  let relativeUrl: string = "/api/item-event";
+  let relativeUrl: string = PATHNAME;
   let id: string | null;
   try {
     const url = new URL(request.url);
     relativeUrl = url.pathname + url.search;
     id = url.searchParams.get("id");
   } catch (err: unknown) {
-    console.error(`${relativeUrl}\n`, err, "\n");
+    console.error(`${relativeUrl}:loader\n`, err, "\n");
     return new Response("Internal Server Error", {
       status: 500,
     });
@@ -40,7 +48,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       },
     });
   } catch (err: unknown) {
-    console.error(`${relativeUrl}\nGET:`, err, "\n");
+    console.error(`${relativeUrl}:loader\n`, err, "\n");
     return new Response("Internal Server Error", {
       status: 500,
     });
@@ -48,88 +56,141 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 };
 
 export const action = async ({ request }: Route.ActionArgs) => {
-  let relativeUrl: string = "/api/item-event";
+  let relativeUrl: string = PATHNAME;
   try {
     const url = new URL(request.url);
     relativeUrl = url.pathname + url.search;
   } catch (err: unknown) {
-    console.error(`${relativeUrl}\nInvalid URL:`, err, "\n");
+    console.error(`${relativeUrl}:action\n`, err, "\n");
     return new Response("Internal Server Error", {
       status: 500,
     });
   }
 
-  let payload: unknown;
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
+  }
+
+  let payload: Record<string, unknown> = {};
+  let imageFile: File | null = null;
   try {
-    payload = await request.json();
-    // console.log(`${relativeUrl}\nReceived payload:`, payload, "\n");
+    const reqContentType =
+      request.headers.get("Content-Type") ??
+      request.headers.get("content-type");
+    if (reqContentType?.startsWith("multipart/form-data")) {
+      const reqFormData = await request.formData();
+      const { image, ...formData } = Object.fromEntries(reqFormData);
+      payload = formData;
+      if (image instanceof File) {
+        imageFile = image;
+      }
+    } else if (reqContentType?.startsWith("application/json")) {
+      payload = await request.json();
+    } else {
+      return new Response("Invalid Content-Type", { status: 400 });
+    }
   } catch (err: unknown) {
-    console.error(`${relativeUrl}\nJSON parse error:`, err, "\n");
-    return new Response("Bad Request", {
-      status: 400,
+    console.error(`${relativeUrl}:action\n`, err, "\n");
+    return new Response("Internal Server Error", {
+      status: 500,
     });
   }
 
-  switch (request.method) {
-    case "POST": {
-      try {
-        const parsed = createItemEventSchema
-          .extend({
-            itemId: z.number().optional(),
+  if (
+    imageFile?.size != null &&
+    imageFile.size > 0 &&
+    imageFile.size <= 10 * 1024 * 1024
+  ) {
+    const s3Key = crypto.randomUUID();
+    const arrayBuffer = await imageFile.arrayBuffer();
+    const imageBuffer = Buffer.from(arrayBuffer);
+    const parsed = createImageSchema.parse({ s3Key, mimeType: imageFile.type });
+    const [image] = await Promise.all([
+      createImage(parsed),
+
+      ...(imageBuffer != null ? [putS3Object(s3Key, imageBuffer)] : []),
+    ]);
+    payload.imageId = image.id;
+  }
+
+  if (imageFile != null && !payload.imageId) {
+    return new Response("Invalid image file", { status: 400 });
+  }
+
+  try {
+    switch (request.method) {
+      case "POST": {
+        const itemEventPayload = makeApiSchema(
+          createItemEventSchema
+            .partial({ itemId: true })
+            .extend({ uid: uidSchema.optional() })
+        )
+          .superRefine((data, ctx) => {
+            if (data.itemId == null && data.uid == null) {
+              ctx.addIssue({
+                path: ["itemId"],
+                message: "Either itemId or uid must be provided",
+                code: z.ZodIssueCode.custom,
+              });
+              ctx.addIssue({
+                path: ["uid"],
+                message: "Either uid or itemId must be provided",
+                code: z.ZodIssueCode.custom,
+              });
+            }
           })
           .parse(payload);
 
-        if (parsed.itemId == null && parsed.uid == null) {
-          return new Response("Must provide itemId or uid", { status: 400 });
-        }
-
-        if (parsed.weight != null && parsed.weight < 0) {
-          parsed.weight = null;
-        }
-
         let itemId: number;
-        if (parsed.itemId != null) {
-          itemId = parsed.itemId;
+        if (itemEventPayload.itemId != null) {
+          itemId = itemEventPayload.itemId;
         } else {
-          const item = await getItemByUid(parsed.uid!);
+          const item = await getItemByUid(itemEventPayload.uid!);
           if (item != null) {
             itemId = item.id;
           } else {
-            const { item: newItem } = await createItemAndTagByUid(parsed);
+            const { item: newItem } = await createItemAndTagByUid({
+              ...itemEventPayload,
+              uid: itemEventPayload.uid!,
+            });
             itemId = newItem.id;
           }
         }
 
-        const newItemEvent = await createItemEvent({ ...parsed, itemId });
+        const parsed = createItemEventSchema.parse({
+          ...itemEventPayload,
+          itemId,
+        });
+        const newItemEvent = await createItemEvent(parsed);
         return Response.json(newItemEvent, {
-          status: 200,
+          status: 201,
           headers: {
             "Content-Type": "application/json",
           },
         });
-      } catch (err: unknown) {
-        console.error(`${relativeUrl}:POST\n`, err, "\n");
-
-        if (err instanceof z.ZodError) {
-          return Response.json(
-            { error: "Bad Request", details: err.issues },
-            {
-              status: 400,
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-        }
-
-        return new Response("Internal Server Error", {
-          status: 500,
-        });
+      }
+      default: {
+        console.log(
+          `${relativeUrl}\nBlocked unallowed methods: ${request.method}\n`
+        );
+        return new Response("Method Not Allowed", { status: 405 });
       }
     }
-    default: {
-      console.log(
-        `${relativeUrl}\nBlocked unallowed methods: ${request.method}\n`
+  } catch (err: unknown) {
+    console.error(`${relativeUrl}:action\n`, err, "\n");
+
+    if (err instanceof z.ZodError) {
+      return Response.json(
+        { message: "Bad Request", errors: err.flatten().fieldErrors },
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
       );
-      return new Response("Method Not Allowed", { status: 405 });
     }
+
+    return new Response("Internal Server Error", {
+      status: 500,
+    });
   }
 };

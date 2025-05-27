@@ -1,10 +1,13 @@
-import { Tag } from "lucide-react";
-import { DateTime } from "luxon";
 import { NavLink, useNavigate } from "react-router";
+import { DateTime } from "luxon";
+import { Tag } from "lucide-react";
+
 import type { getItem } from "~/actions/select.server";
+
 import { cn } from "~/lib/utils";
 import { CtxMenu } from "~/components/ctx-menu";
-import { Image } from "./image";
+import { Image } from "~/components/image";
+import { Badge } from "~/components/ui/badge";
 
 export const FridgeItem = ({
   item,
@@ -46,7 +49,7 @@ export const FridgeItem = ({
         to={`/item/${item.id}`}
         className={({ isPending }) =>
           cn(
-            "p-2 flex items-center space-x-2 rounded hover:bg-accent border no-underline",
+            "p-2 flex items-center gap-x-2 rounded hover:bg-accent border no-underline",
             isPending ? "opacity-60  pointer-events-none" : undefined
           )
         }
@@ -57,32 +60,37 @@ export const FridgeItem = ({
           }
           size="24"
         />
-        <div className="flex flex-col w-full grow">
-          <span>{item.name}</span>
-          <span className="text-sm font-light">{item.description}</span>
-          {item.itemTypeId == null ? null : (
-            <span className="text-sm font-light">Type: {item.itemTypeId}</span>
-          )}
-          {item.expireAt == null ? null : (
-            <span className="text-sm font-light">
-              Expiration date:{" "}
-              {DateTime.fromMillis(item.expireAt).toLocaleString()}
-            </span>
-          )}
-          {item.currentWeight == null ? null : (
-            <span className="text-sm font-light">
-              Weight: {item.currentWeight} g
-            </span>
+        <div className="w-full flex flex-col sm:flex-row items-start sm:items-center gap-x-0 gap-y-2 sm:gap-x-2 sm:gap-y-0">
+          <div className="flex flex-col w-full grow">
+            <div className="flex gap-x-2 items-center">
+              <span>{item.name}</span>
+              {item.type?.name != null ? (
+                <Badge variant="outline">{item.type.name}</Badge>
+              ) : null}
+            </div>
+            <span className="text-sm font-light">{item.description}</span>
+            {item.expireAt == null ? null : (
+              <span className="text-sm font-light">
+                {`Expire at: ${DateTime.fromMillis(
+                  item.expireAt
+                ).toLocaleString()}`}
+              </span>
+            )}
+            {item.currentWeight == null ? null : (
+              <span className="text-sm font-light">
+                Weight: {item.currentWeight} g
+              </span>
+            )}
+          </div>
+          {item.tag == null ? null : (
+            <div className="flex flex-col shrink-0 items-start sm:items-end">
+              <span className="text-sm font-light">
+                <Tag className="size-4 inline-block" /> {item.tag.name}
+              </span>
+              <span className="text-sm font-light">UID: {item.tag.uid}</span>
+            </div>
           )}
         </div>
-        {item.tag == null ? null : (
-          <div className="flex flex-col shrink-0 items-end">
-            <span className="text-sm font-light">
-              <Tag className="size-4 inline-block" /> {item.tag.name}
-            </span>
-            <span className="text-sm font-light">UID: {item.tag.uid}</span>
-          </div>
-        )}
       </NavLink>
     </CtxMenu>
   );

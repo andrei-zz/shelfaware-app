@@ -1,8 +1,10 @@
 import { NavLink, useNavigate } from "react-router";
 import { DateTime } from "luxon";
-import type { getTag } from "~/actions/select.server";
-import { cn } from "~/lib/utils";
 import { Paperclip } from "lucide-react";
+
+import type { getTag } from "~/actions/select.server";
+
+import { cn } from "~/lib/utils";
 import { CtxMenu } from "~/components/ctx-menu";
 
 export const TagItem = ({

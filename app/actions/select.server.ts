@@ -1,4 +1,5 @@
 import {
+  type ExtractTablesWithRelations,
   type SQLWrapper,
   and,
   asc,
@@ -10,8 +11,9 @@ import {
   lte,
   SQL,
 } from "drizzle-orm";
-import { createSelectSchema } from "drizzle-zod";
-import type { z } from "zod";
+import type { PgTransaction } from "drizzle-orm/pg-core";
+import type { NeonQueryResultHKT } from "drizzle-orm/neon-serverless";
+
 import { db } from "~/database/db.server";
 import { items, itemTypes, itemEvents, tags, images } from "~/database/schema";
 
@@ -26,13 +28,7 @@ export const getItem = async (itemId: number) =>
       tag: true,
       image: {
         columns: {
-          id: true,
-          title: true,
-          description: true,
-          data: false,
-          mimeType: true,
-          createdAt: true,
-          updatedAt: true,
+          s3Key: false,
         },
       },
     },
@@ -49,13 +45,7 @@ export const getItemByTagId = async (tagId: number) => {
           tag: true,
           image: {
             columns: {
-              id: true,
-              title: true,
-              description: true,
-              data: false,
-              mimeType: true,
-              createdAt: true,
-              updatedAt: true,
+              s3Key: false,
             },
           },
         },
@@ -76,13 +66,7 @@ export const getItemByUid = async (tagUid: string) => {
           tag: true,
           image: {
             columns: {
-              id: true,
-              title: true,
-              description: true,
-              data: false,
-              mimeType: true,
-              createdAt: true,
-              updatedAt: true,
+              s3Key: false,
             },
           },
         },
@@ -91,6 +75,24 @@ export const getItemByUid = async (tagUid: string) => {
   });
   return tag?.item;
 };
+
+export const getItemWithEvents = async (
+  itemId: number,
+  orderEventsBy: SQL = desc(itemEvents.timestamp)
+) =>
+  await db.query.items.findFirst({
+    where: eq(items.id, itemId),
+    with: {
+      type: true,
+      tag: true,
+      image: {
+        columns: {
+          s3Key: false,
+        },
+      },
+      events: { orderBy: orderEventsBy },
+    },
+  });
 
 export const getItems = async (
   conditions?: SQLWrapper[],
@@ -106,13 +108,7 @@ export const getItems = async (
       tag: true,
       image: {
         columns: {
-          id: true,
-          title: true,
-          description: true,
-          data: false,
-          mimeType: true,
-          createdAt: true,
-          updatedAt: true,
+          s3Key: false,
         },
       },
     },
@@ -178,41 +174,85 @@ export const getPresentItemsAtTime = async (timestamp: number) => {
 
 // itemTypes
 
-// const selectItemTypesSchema = createSelectSchema(itemTypes);
-// export type ItemType = z.infer<typeof selectItemTypesSchema> & {
-//   children: ItemType[];
-// };
-// // Build full type hierarchy
-// export const getAllItemTypes = async () => {
-//   const types = await db.select().from(itemTypes).orderBy(asc(itemTypes.id));
+export const getItemType = async (itemTypeId: number) =>
+  await db
+    .select()
+    .from(itemTypes)
+    .where(eq(itemTypes.id, itemTypeId))
+    .then((value) => value[0]);
 
-//   // Build a tree (basic version)
-//   const typeMap = new Map<number, ItemType>();
-//   const roots: ItemType[] = [];
+export const getItemTypeByName = async (itemTypeName: string) =>
+  await db
+    .select()
+    .from(itemTypes)
+    .where(eq(itemTypes.name, itemTypeName))
+    .then((value) => value[0]);
 
-//   types.forEach((type) => {
-//     typeMap.set(type.id, { ...type, children: [] });
-//   });
+export const getItemTypeWithItems = async (
+  itemTypeId: number,
+  orderItemsBy: SQL = desc(items.updatedAt)
+) =>
+  await db.query.itemTypes.findFirst({
+    where: eq(itemTypes.id, itemTypeId),
+    with: {
+      items: {
+        with: {
+          type: true,
+          tag: true,
+          image: {
+            columns: {
+              s3Key: false,
+            },
+          },
+        },
+        orderBy: orderItemsBy,
+      },
+    },
+  });
 
-//   typeMap.forEach((type) => {
-//     if (type.parentId !== null) {
-//       const parent = typeMap.get(type.parentId);
-//       parent?.children.push(type);
-//     } else {
-//       roots.push(type);
-//     }
-//   });
-
-//   return roots;
-// };
+export const getItemTypes = async (
+  conditions?: SQLWrapper[],
+  orderBy: SQL = asc(itemTypes.name)
+) =>
+  await db.query.itemTypes.findMany({
+    where:
+      conditions?.length != null && conditions.length > 0
+        ? and(...conditions)
+        : undefined,
+    orderBy,
+  });
 
 // itemEvents
+
+export const getItemEvent = async (itemEventId: number) =>
+  await db.query.itemEvents.findFirst({
+    where: eq(itemEvents.id, itemEventId),
+    with: {
+      image: {
+        columns: {
+          s3Key: false,
+        },
+      },
+      item: {
+        with: {
+          type: true,
+          tag: true,
+          image: {
+            columns: {
+              s3Key: false,
+            },
+          },
+        },
+      },
+    },
+  });
 
 // Get all item events, optionally between start and end
 export const getItemEvents = async (
   start?: number,
   end?: number,
-  conditions?: SQLWrapper[]
+  conditions?: SQLWrapper[],
+  orderBy: SQL = desc(itemEvents.timestamp)
 ) => {
   const allConditions: SQLWrapper[] = [];
   if (conditions != null) {
@@ -228,25 +268,24 @@ export const getItemEvents = async (
   return await db.query.itemEvents.findMany({
     where: allConditions.length > 0 ? and(...allConditions) : undefined,
     with: {
+      image: {
+        columns: {
+          s3Key: false,
+        },
+      },
       item: {
         with: {
           type: true,
           tag: true,
           image: {
             columns: {
-              id: true,
-              title: true,
-              description: true,
-              data: false,
-              mimeType: true,
-              createdAt: true,
-              updatedAt: true,
+              s3Key: false,
             },
           },
         },
       },
     },
-    orderBy: desc(itemEvents.timestamp),
+    orderBy,
   });
 };
 
@@ -255,49 +294,24 @@ export const getItemEventsOf = async (itemId: number) =>
   await db.query.itemEvents.findMany({
     where: eq(itemEvents.itemId, itemId),
     with: {
+      image: {
+        columns: {
+          s3Key: false,
+        },
+      },
       item: {
         with: {
           type: true,
           tag: true,
           image: {
             columns: {
-              id: true,
-              title: true,
-              description: true,
-              data: false,
-              mimeType: true,
-              createdAt: true,
-              updatedAt: true,
+              s3Key: false,
             },
           },
         },
       },
     },
     orderBy: desc(itemEvents.timestamp),
-  });
-
-export const getItemEvent = async (itemEventId: number) =>
-  await db.query.itemEvents.findFirst({
-    where: eq(itemEvents.id, itemEventId),
-    with: {
-      item: {
-        with: {
-          type: true,
-          tag: true,
-          image: {
-            columns: {
-              id: true,
-              title: true,
-              description: true,
-              data: false,
-              mimeType: true,
-              createdAt: true,
-              updatedAt: true,
-            },
-          },
-        },
-      },
-    },
   });
 
 // tags
@@ -309,15 +323,10 @@ export const getTag = async (tagId: number) =>
       item: {
         with: {
           type: true,
+          tag: true,
           image: {
             columns: {
-              id: true,
-              title: true,
-              description: true,
-              data: false,
-              mimeType: true,
-              createdAt: true,
-              updatedAt: true,
+              s3Key: false,
             },
           },
         },
@@ -334,13 +343,7 @@ export const getTagByItemId = async (itemId: number) =>
           type: true,
           image: {
             columns: {
-              id: true,
-              title: true,
-              description: true,
-              data: false,
-              mimeType: true,
-              createdAt: true,
-              updatedAt: true,
+              s3Key: false,
             },
           },
         },
@@ -357,13 +360,7 @@ export const getTagByUid = async (uid: string) =>
           type: true,
           image: {
             columns: {
-              id: true,
-              title: true,
-              description: true,
-              data: false,
-              mimeType: true,
-              createdAt: true,
-              updatedAt: true,
+              s3Key: false,
             },
           },
         },
@@ -373,9 +370,18 @@ export const getTagByUid = async (uid: string) =>
 
 export const getTags = async (
   conditions?: SQLWrapper[],
-  orderBy: SQL = desc(tags.attachedAt)
+  orderBy: SQL = desc(tags.attachedAt),
+  columns?: { [K in keyof typeof tags.$inferSelect]?: boolean },
+  tx?:
+    | typeof db
+    | PgTransaction<
+        NeonQueryResultHKT,
+        typeof import("~/database/schema"),
+        ExtractTablesWithRelations<typeof import("~/database/schema")>
+      >
 ) =>
-  await db.query.tags.findMany({
+  await (tx ?? db).query.tags.findMany({
+    columns: columns ?? undefined,
     where:
       conditions != null && conditions.length > 0
         ? and(...conditions)
@@ -386,13 +392,7 @@ export const getTags = async (
           type: true,
           image: {
             columns: {
-              id: true,
-              title: true,
-              description: true,
-              data: false,
-              mimeType: true,
-              createdAt: true,
-              updatedAt: true,
+              s3Key: false,
             },
           },
         },
@@ -434,13 +434,7 @@ export const getImage = async (imageId: number) =>
   await db.query.images.findFirst({
     where: eq(images.id, imageId),
     columns: {
-      id: true,
-      title: true,
-      description: true,
-      data: false,
-      mimeType: true,
-      createdAt: true,
-      updatedAt: true,
+      s3Key: false,
     },
   });
 
@@ -450,13 +444,7 @@ export const getImage = async (imageId: number) =>
 //     with: {
 //       image: {
 //         columns: {
-//           id: true,
-//           title: true,
-//           description: true,
-//           data: false,
-//           mimeType: true,
-//           createdAt: true,
-//           updatedAt: true,
+//           s3Key: false,
 //         },
 //       },
 //     },
@@ -472,13 +460,7 @@ export const getImage = async (imageId: number) =>
 //         with: {
 //           image: {
 //             columns: {
-//               id: true,
-//               title: true,
-//               description: true,
-//               data: false,
-//               mimeType: true,
-//               createdAt: true,
-//               updatedAt: true,
+//               s3Key: false,
 //             },
 //           },
 //         },
@@ -496,13 +478,7 @@ export const getImage = async (imageId: number) =>
 //         with: {
 //           image: {
 //             columns: {
-//               id: true,
-//               title: true,
-//               description: true,
-//               data: false,
-//               mimeType: true,
-//               createdAt: true,
-//               updatedAt: true,
+//               s3Key: false,
 //             },
 //           },
 //         },
@@ -518,13 +494,7 @@ export const getImages = async (
 ) =>
   await db.query.images.findMany({
     columns: {
-      id: true,
-      title: true,
-      description: true,
-      data: false,
-      mimeType: true,
-      createdAt: true,
-      updatedAt: true,
+      s3Key: false,
     },
     where:
       conditions != null && conditions.length > 0
@@ -533,7 +503,7 @@ export const getImages = async (
     orderBy,
   });
 
-export const getImageWithData = async (imageId: number) => {
+export const getImageWithS3Key = async (imageId: number) => {
   const imagesData = await db
     .select()
     .from(images)

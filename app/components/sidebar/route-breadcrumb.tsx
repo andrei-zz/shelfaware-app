@@ -1,6 +1,8 @@
-import { House, Slash } from "lucide-react";
 import { Link, useLocation } from "react-router";
 import { Fragment } from "react/jsx-runtime";
+import { House, Slash } from "lucide-react";
+
+import { cn } from "~/lib/utils";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,7 +12,6 @@ import {
   BreadcrumbSeparator,
 } from "~/components/ui/breadcrumb";
 import { Button } from "~/components/ui/button";
-import { cn } from "~/lib/utils";
 
 export const RouteBreadcrumb = () => {
   const location = useLocation();
@@ -21,13 +22,15 @@ export const RouteBreadcrumb = () => {
     <Breadcrumb>
       <BreadcrumbList className="gap-2.5 sm:gap-2.5">
         <BreadcrumbLink asChild>
-          <Button asChild variant="link" className="px-0! py-0 hover:[&_svg]:opacity-100">
+          <Button
+            asChild
+            variant="link"
+            className="px-0! py-0 hover:[&_svg]:opacity-100"
+          >
             <Link to="/">
               <House
                 className={cn(
-                  location.pathname === "/"
-                    ? "opacity-90"
-                    : "opacity-60"
+                  location.pathname === "/" ? "opacity-90" : "opacity-60"
                 )}
               />
             </Link>

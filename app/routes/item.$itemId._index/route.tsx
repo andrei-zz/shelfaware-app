@@ -1,25 +1,25 @@
 import type { Route } from "./+types/route";
-import { redirect } from "react-router";
+
+import { useFetcher } from "react-router";
 import { DateTime } from "luxon";
-import { createImageSchema, createImage } from "~/actions/insert.server";
+
 import {
   getImages,
   getItem,
+  getItemTypes,
   getTagsWithRawItems,
 } from "~/actions/select.server";
-import {
-  updateItem,
-  updateItemSchema,
-  updateTag,
-} from "~/actions/update.server";
+
+import { Main } from "~/components/main";
+import { Form } from "~/components/form/form";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
-import { TagField } from "~/components/tag-field";
-import { ImageField } from "~/components/image-field";
-import { Main } from "~/components/main";
-import { Form } from "~/components/form";
+import { PositionFieldset } from "~/components/form/position-fieldset";
+import { TagField } from "~/components/form/tag-field";
+import { ImageField } from "~/components/form/image-field";
+import { ItemTypeField } from "~/components/form/item-type-field";
 
 export const meta = ({ params }: Route.MetaArgs) => {
   return [
@@ -36,95 +36,54 @@ export const loader = async ({ params }: Route.LoaderArgs) => {
   const item = await getItem(Number(params.itemId));
   const tags = await getTagsWithRawItems();
   const images = await getImages();
+  const itemTypes = await getItemTypes();
 
-  return { item, tags, images };
+  return { item, tags, images, itemTypes };
 };
 
 export const action = async ({ request, params }: Route.ActionArgs) => {
-  if (request.method !== "POST") {
+  const itemEndpoint = "/api/item";
+  const itemApiUrl = new URL(itemEndpoint, request.url).toString();
+
+  if (request.method !== "PATCH") {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
   const formData = await request.formData();
+  formData.append("id", params.itemId);
 
-  const imageFormData: Record<string, unknown> = {};
-  const imageFile = formData.get("image");
-  // console.log("imageFile", imageFile, typeof imageFile);
-  if (imageFile instanceof File && imageFile.size > 0) {
-    const arrayBuffer = await imageFile.arrayBuffer();
-    imageFormData.data = Buffer.from(arrayBuffer);
-    imageFormData.mimeType = imageFile.type;
+  const res = await fetch(itemApiUrl, {
+    method: request.method,
+    body: formData,
+  });
+
+  if (!res.ok) {
+    if (
+      (
+        res.headers.get("Content-Type") ?? res.headers.get("content-type")
+      )?.startsWith("application/json")
+    ) {
+      const resError = await res.json();
+      return Response.json(resError, { status: res.status });
+    } else {
+      return new Response(res.body, { status: res.status });
+    }
   }
 
-  let newImage: Awaited<ReturnType<typeof createImage>> | null = null;
-  if (imageFormData.data != null) {
-    // console.log("imageFormData.data", imageFormData.data);
-    const parsed = createImageSchema.parse(imageFormData);
-    newImage = await createImage(parsed);
-  }
-  // console.log("newImage", newImage);
+  const newItem = await res.json();
 
-  const itemFormData: Record<string, FormDataEntryValue | null> = {};
-  itemFormData.name = formData.get("name");
-  itemFormData.description = formData.get("description");
-  itemFormData.expireAt = formData.get("expireAt");
-  itemFormData.originalWeight = formData.get("originalWeight");
-  itemFormData.currentWeight = formData.get("currentWeight");
-  itemFormData.itemTypeId = formData.get("itemTypeId");
-  itemFormData.isPresent = formData.get("isPresent");
-  itemFormData.imageId = formData.get("imageId");
-
-  const itemData: Record<string, unknown> = {
-    ...itemFormData,
-    id: Number(params.itemId),
-    expireAt:
-      typeof itemFormData.expireAt === "string" && itemFormData.expireAt
-        ? new Date(itemFormData.expireAt).getTime()
-        : null,
-    originalWeight:
-      itemFormData.originalWeight != null && itemFormData.originalWeight !== ""
-        ? Number(itemFormData.originalWeight)
-        : null,
-    currentWeight:
-      itemFormData.currentWeight != null && itemFormData.currentWeight !== ""
-        ? Number(itemFormData.currentWeight)
-        : null,
-    isPresent: Boolean(itemFormData.isPresent),
-    imageId:
-      newImage?.id ??
-      (itemFormData.imageId != null && itemFormData.imageId !== ""
-        ? Number(itemFormData.imageId)
-        : undefined),
-  };
-
-  // console.log(
-  //   itemData.originalWeight,
-  //   itemData.currentWeight,
-  //   itemData.originalWeight != null && itemData.currentWeight == null
-  // );
-
-  if (itemData.originalWeight != null && itemData.currentWeight == null) {
-    itemData.currentWeight = itemData.originalWeight;
-  }
-
-  // console.log("itemData", itemData);
-
-  const parsed = updateItemSchema.parse(itemData);
-  // console.log(parsed.originalWeight, parsed.currentWeight);
-  const newItem = await updateItem(parsed);
-
-  const formTagId = formData.get("tagId");
-  if (formTagId != null && formTagId !== "" && newItem != null) {
-    const newTag = await updateTag({
-      id: Number(formTagId),
-      itemId: newItem.id,
+  if (!newItem || !newItem.id) {
+    return new Response(`${itemEndpoint} returns corrupted data`, {
+      status: 500,
     });
   }
 
-  return redirect("/");
+  return null;
 };
 
-const ItemId = ({ params, loaderData }: Route.ComponentProps) => {
+const EditItemPage = ({ params, loaderData }: Route.ComponentProps) => {
+  const fetcher = useFetcher({ key: "edit-item" });
+
   return (
     <Main>
       {loaderData.item == null ? (
@@ -139,8 +98,9 @@ const ItemId = ({ params, loaderData }: Route.ComponentProps) => {
       ) : (
         <Form
           fetcherKey="edit-item"
-          method="POST"
+          method="PATCH"
           encType="multipart/form-data"
+          navigate={false}
         >
           <div className="flex items-center justify-between">
             <h2 className="mt-0 mb-0">{`Edit Item${
@@ -155,7 +115,7 @@ const ItemId = ({ params, loaderData }: Route.ComponentProps) => {
               autoComplete="off"
               readOnly
               disabled
-              value={loaderData?.item?.id}
+              value={loaderData.item?.id}
               className="w-full"
             />
           </div>
@@ -167,10 +127,17 @@ const ItemId = ({ params, loaderData }: Route.ComponentProps) => {
               name="name"
               autoComplete="off"
               required
-              defaultValue={loaderData?.item?.name}
+              defaultValue={loaderData.item?.name}
               className="w-full"
             />
           </div>
+          <ItemTypeField
+            itemTypeIdFieldName="itemTypeId"
+            itemTypeNameFieldName="itemTypeName"
+            label="Type"
+            itemType={loaderData.item?.type ?? undefined}
+            itemTypes={loaderData.itemTypes ?? undefined}
+          />
           <div className="flex flex-col w-full space-y-2">
             <Label htmlFor="description">Description</Label>
             <Input
@@ -178,7 +145,7 @@ const ItemId = ({ params, loaderData }: Route.ComponentProps) => {
               id="description"
               name="description"
               autoComplete="off"
-              defaultValue={loaderData?.item?.description ?? undefined}
+              defaultValue={loaderData.item?.description ?? undefined}
               className="w-full"
             />
           </div>
@@ -190,9 +157,9 @@ const ItemId = ({ params, loaderData }: Route.ComponentProps) => {
               name="expireAt"
               // min={DateTime.now().toISODate()}
               defaultValue={
-                loaderData?.item?.expireAt != null
+                loaderData.item?.expireAt != null
                   ? DateTime.fromMillis(
-                      loaderData?.item?.expireAt
+                      loaderData.item?.expireAt
                     ).toISODate() ?? undefined
                   : undefined
               }
@@ -205,7 +172,7 @@ const ItemId = ({ params, loaderData }: Route.ComponentProps) => {
               type="number"
               id="originalWeight"
               name="originalWeight"
-              defaultValue={loaderData?.item?.originalWeight ?? undefined}
+              defaultValue={loaderData.item?.originalWeight ?? undefined}
               className="w-full"
             />
           </div>
@@ -216,30 +183,27 @@ const ItemId = ({ params, loaderData }: Route.ComponentProps) => {
               id="currentWeight"
               name="currentWeight"
               placeholder="Same as original weight"
-              defaultValue={loaderData?.item?.currentWeight ?? undefined}
+              defaultValue={loaderData.item?.currentWeight ?? undefined}
               className="w-full"
             />
           </div>
-          {/* <div className="flex flex-col w-full space-y-2">
-          <Label htmlFor="itemTypeId">Item type ID</Label>
-          <Input
-            type="number"
-            id="itemTypeId"
-            name="itemTypeId"
-            defaultValue={loaderData?.item?.itemTypeId ?? undefined}
-            className="w-full"
-          />
-        </div> */}
-          <div className="flex w-full items-center space-x-2">
+          <div className="my-0.5 flex w-full items-center space-x-2">
             <Checkbox
               id="isPresent"
               name="isPresent"
-              defaultChecked={loaderData?.item?.isPresent ?? true}
+              defaultChecked={loaderData.item?.isPresent ?? true}
             />
             <Label htmlFor="isPresent">
               Mark item as currently in the fridge
             </Label>
           </div>
+          <PositionFieldset
+            floorInputProps={{
+              defaultValue: loaderData.item?.floor ?? undefined,
+            }}
+            rowInputProps={{ defaultValue: loaderData.item?.row ?? undefined }}
+            colInputProps={{ defaultValue: loaderData.item?.col ?? undefined }}
+          />
           <div className="flex flex-col w-full space-y-2">
             <Label htmlFor="createdAt">Item creation date</Label>
             <Input
@@ -248,9 +212,9 @@ const ItemId = ({ params, loaderData }: Route.ComponentProps) => {
               readOnly
               disabled
               defaultValue={
-                loaderData?.item?.createdAt != null
+                loaderData.item?.createdAt != null
                   ? DateTime.fromMillis(
-                      loaderData?.item?.createdAt
+                      loaderData.item?.createdAt
                     ).toISODate() ?? undefined
                   : undefined
               }
@@ -265,9 +229,9 @@ const ItemId = ({ params, loaderData }: Route.ComponentProps) => {
               readOnly
               disabled
               defaultValue={
-                loaderData?.item?.updatedAt != null
+                loaderData.item?.updatedAt != null
                   ? DateTime.fromMillis(
-                      loaderData?.item?.updatedAt
+                      loaderData.item?.updatedAt
                     ).toISODate() ?? undefined
                   : undefined
               }
@@ -276,10 +240,8 @@ const ItemId = ({ params, loaderData }: Route.ComponentProps) => {
           </div>
           <TagField
             name="tagId"
-            defaultTagId={loaderData.item.tag?.id.toString()}
             tags={loaderData.tags}
-            label="Attached tag"
-            placeholder="Untagged"
+            tag={loaderData.item.tag}
           />
           <ImageField
             imageFileFieldName="image"
@@ -296,4 +258,4 @@ const ItemId = ({ params, loaderData }: Route.ComponentProps) => {
     </Main>
   );
 };
-export default ItemId;
+export default EditItemPage;
