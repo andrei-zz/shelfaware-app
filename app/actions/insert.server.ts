@@ -1,6 +1,4 @@
-import { eq, sql, type ExtractTablesWithRelations } from "drizzle-orm";
-import type { PgTransaction } from "drizzle-orm/pg-core";
-import type { NeonQueryResultHKT } from "drizzle-orm/neon-serverless";
+import { eq, sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -14,6 +12,7 @@ import {
   images,
 } from "~/database/schema";
 import { updateItem } from "./update.server";
+import type { DrizzleTx } from "./drizzle-utils";
 
 export const createItemSchema = createInsertSchema(items).omit({
   id: true,
@@ -24,13 +23,7 @@ export const createItemSchema = createInsertSchema(items).omit({
 export const createItem = async (
   // Exclude the id and timestamps
   data: z.infer<typeof createItemSchema>,
-  tx?:
-    | typeof db
-    | PgTransaction<
-        NeonQueryResultHKT,
-        typeof import("~/database/schema"),
-        ExtractTablesWithRelations<typeof import("~/database/schema")>
-      >
+  tx?: typeof db | DrizzleTx
 ) => {
   const database = tx ?? db;
 
@@ -73,10 +66,10 @@ export const createItemEventSchema = createInsertSchema(itemEvents).omit({
 });
 export const createItemEvent = async (
   data: z.infer<typeof createItemEventSchema>
-) => {
-  return await db.transaction(async (tx) => {
+) =>
+  await db.transaction(async (tx) => {
     if (data.weight != null && data.weight < 0) {
-      data.weight = null;
+      data.weight = undefined;
     }
 
     // Always insert the event
@@ -122,7 +115,6 @@ export const createItemEvent = async (
 
     return event;
   });
-};
 
 export const createTagSchema = createInsertSchema(tags)
   .omit({
@@ -136,13 +128,7 @@ export const createTagSchema = createInsertSchema(tags)
   });
 const createTagHelper = async (
   data: z.infer<typeof createTagSchema>,
-  tx?:
-    | typeof db
-    | PgTransaction<
-        NeonQueryResultHKT,
-        typeof import("~/database/schema"),
-        ExtractTablesWithRelations<typeof import("~/database/schema")>
-      >
+  tx?: typeof db | DrizzleTx
 ) => {
   const database = tx ?? db;
 
@@ -212,13 +198,7 @@ export const createImageSchema = createInsertSchema(images).omit({
 });
 export const createImage = async (
   data: z.infer<typeof createImageSchema>,
-  tx?:
-    | typeof db
-    | PgTransaction<
-        NeonQueryResultHKT,
-        typeof import("~/database/schema"),
-        ExtractTablesWithRelations<typeof import("~/database/schema")>
-      >
+  tx?: typeof db | DrizzleTx
 ) => {
   const database = tx ?? db;
 

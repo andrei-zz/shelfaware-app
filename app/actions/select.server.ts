@@ -1,5 +1,4 @@
 import {
-  type ExtractTablesWithRelations,
   type SQLWrapper,
   and,
   asc,
@@ -11,11 +10,10 @@ import {
   lte,
   SQL,
 } from "drizzle-orm";
-import type { PgTransaction } from "drizzle-orm/pg-core";
-import type { NeonQueryResultHKT } from "drizzle-orm/neon-serverless";
 
 import { db } from "~/database/db.server";
 import { items, itemTypes, itemEvents, tags, images } from "~/database/schema";
+import type { DrizzleTx } from "./drizzle-utils";
 
 // items
 
@@ -372,13 +370,7 @@ export const getTags = async (
   conditions?: SQLWrapper[],
   orderBy: SQL = desc(tags.attachedAt),
   columns?: { [K in keyof typeof tags.$inferSelect]?: boolean },
-  tx?:
-    | typeof db
-    | PgTransaction<
-        NeonQueryResultHKT,
-        typeof import("~/database/schema"),
-        ExtractTablesWithRelations<typeof import("~/database/schema")>
-      >
+  tx?: typeof db | DrizzleTx
 ) =>
   await (tx ?? db).query.tags.findMany({
     columns: columns ?? undefined,

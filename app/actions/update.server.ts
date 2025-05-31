@@ -1,16 +1,4 @@
-import {
-  type ExtractTablesWithRelations,
-  type SQL,
-  type SQLWrapper,
-  and,
-  eq,
-  sql,
-} from "drizzle-orm";
-import type { PgTransaction } from "drizzle-orm/pg-core";
-import type {
-  NeonDatabase,
-  NeonQueryResultHKT,
-} from "drizzle-orm/neon-serverless";
+import { type SQL, type SQLWrapper, and, eq, sql } from "drizzle-orm";
 import { createUpdateSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -25,6 +13,7 @@ import {
 } from "~/database/schema";
 import { createImage } from "./insert.server";
 import { getTags } from "./select.server";
+import type { DrizzleTx } from "./drizzle-utils";
 
 export const updateItemSchema = createUpdateSchema(items)
   .omit({
@@ -37,13 +26,7 @@ export const updateItemSchema = createUpdateSchema(items)
 // Only fields that update only the items table are allowed here
 export const updateItem = async (
   { id, ...data }: z.infer<typeof updateItemSchema>,
-  tx?:
-    | typeof db
-    | PgTransaction<
-        NeonQueryResultHKT,
-        typeof import("~/database/schema"),
-        ExtractTablesWithRelations<typeof import("~/database/schema")>
-      >
+  tx?: typeof db | DrizzleTx
 ) => {
   const database = tx ?? db;
 
@@ -79,13 +62,7 @@ const updateItemsSchema = createUpdateSchema(items)
 export const updateItems = async (
   data: z.infer<typeof updateItemsSchema>,
   conditions: [SQLWrapper, ...SQLWrapper[]],
-  tx?:
-    | typeof db
-    | PgTransaction<
-        NeonQueryResultHKT,
-        typeof import("~/database/schema"),
-        ExtractTablesWithRelations<typeof import("~/database/schema")>
-      >
+  tx?: typeof db | DrizzleTx
 ) => {
   const database = tx ?? db;
 
@@ -146,13 +123,7 @@ export const updateTagSchema = createUpdateSchema(tags)
   .partial();
 export const updateTagHelper = async (
   { id, uid, ...data }: z.infer<typeof updateTagSchema>,
-  tx?:
-    | typeof db
-    | PgTransaction<
-        NeonQueryResultHKT,
-        typeof import("~/database/schema"),
-        ExtractTablesWithRelations<typeof import("~/database/schema")>
-      >
+  tx?: typeof db | DrizzleTx
 ) => {
   const database = tx ?? db;
 
@@ -215,13 +186,7 @@ export const updateTagHelper = async (
 };
 export const updateTag = async (
   data: z.infer<typeof updateTagSchema>,
-  tx?:
-    | typeof db
-    | PgTransaction<
-        NeonQueryResultHKT,
-        typeof import("~/database/schema"),
-        ExtractTablesWithRelations<typeof import("~/database/schema")>
-      >
+  tx?: typeof db | DrizzleTx
 ) => await db.transaction(async (tx) => updateTagHelper(data, tx));
 
 export const updateImageSchema = createUpdateSchema(images)

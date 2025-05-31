@@ -109,6 +109,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
       if (image instanceof File) {
         imageFile = image;
+      } else {
+        return new Response("Form image should be File", { status: 400 });
       }
       if (typeof formTagId === "string") {
         tagId = formTagId;
