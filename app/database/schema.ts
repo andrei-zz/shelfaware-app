@@ -67,7 +67,7 @@ export const items = pgTable(
       onDelete: "set null",
     }),
     isPresent: boolean("is_present").default(true),
-    floor: integer("floor"),
+    plate: integer("plate"),
     row: integer("row"),
     col: integer("col"),
     createdAt: unixTimestamp("created_at")
@@ -113,7 +113,7 @@ export const itemEvents = pgTable(
       .notNull()
       .default(sql`now()`),
     weight: real("weight"),
-    floor: integer("floor"),
+    plate: integer("plate"),
     row: integer("row"),
     col: integer("col"),
     imageId: integer("image_id").references(() => images.id, {

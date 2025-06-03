@@ -10,12 +10,14 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { useEffect, useState } from "react";
+import { FieldError } from "./field-error";
 
 export const ItemField = ({
   items,
   item,
   mapFunction,
   emptyItemsLabel,
+  fieldErrors,
   containerProps,
   labelProps,
   selectTriggerProps,
@@ -30,6 +32,7 @@ export const ItemField = ({
     value: Awaited<ReturnType<typeof getItems>>[number]
   ) => React.ReactNode;
   emptyItemsLabel?: React.ReactNode;
+  fieldErrors?: string[];
   containerProps?: React.ComponentProps<"div">;
   labelProps?: React.ComponentProps<typeof Label>;
   selectTriggerProps?: React.ComponentProps<typeof SelectTrigger>;
@@ -37,12 +40,12 @@ export const ItemField = ({
   selectContentProps?: React.ComponentProps<typeof SelectContent>;
   selectItemProps?: React.ComponentProps<typeof SelectItem>;
 }) => {
-  const [itemIdValue, setItemIdValue] = useState<string | undefined>(
-    item?.id?.toString()
+  const [itemIdValue, setItemIdValue] = useState<string>(
+    item?.id?.toString() ?? ""
   );
 
   useEffect(() => {
-    setItemIdValue(item?.id?.toString());
+    setItemIdValue(item?.id?.toString() ?? "");
   }, [item?.id]);
 
   return (
@@ -99,6 +102,11 @@ export const ItemField = ({
           )}
         </SelectContent>
       </Select>
+      {Array.isArray(fieldErrors) && fieldErrors.length > 0 ? (
+        <FieldError className="col-span-1 sm:col-span-2">
+          {fieldErrors[0]}
+        </FieldError>
+      ) : null}
     </div>
   );
 };

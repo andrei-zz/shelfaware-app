@@ -40,7 +40,7 @@ export const Image = ({
     <div
       {...containerProps}
       className={cn(
-        "shrink-0 flex justify-center items-center",
+        "shrink-0 flex justify-center items-center [&_svg]:shrink-0",
         getSizeClassName(size),
         containerProps?.className
       )}

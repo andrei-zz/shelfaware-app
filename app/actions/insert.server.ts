@@ -96,8 +96,8 @@ export const createItemEvent = async (
       updates.updatedAt = sql`now()`;
     }
 
-    if (data.floor != null) {
-      updates.floor = data.floor;
+    if (data.plate != null) {
+      updates.plate = data.plate;
       updates.updatedAt = sql`now()`;
     }
     if (data.row != null) {

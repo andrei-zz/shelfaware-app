@@ -7,9 +7,8 @@ import { getItemType } from "~/actions/select.server";
 
 import { Main } from "~/components/main";
 import { Form } from "~/components/form/form";
-import { Label } from "~/components/ui/label";
-import { Input } from "~/components/ui/input";
-import { Button } from "~/components/ui/button";
+import { Field } from "~/components/form/field";
+import { SubmitButton } from "~/components/form/submit-button";
 
 export const meta = ({ params }: Route.MetaArgs) => {
   return [
@@ -83,88 +82,65 @@ const EditItemTypePage = ({ params, loaderData }: Route.ComponentProps) => {
           <span>Item type not found</span>
         </div>
       ) : (
-        <Form
-          fetcherKey="edit-item-type"
-          method="PATCH"
-          encType="multipart/form-data"
-        >
+        <Form fetcher={fetcher} method="PATCH" encType="multipart/form-data">
           <div className="flex items-center justify-between">
             <h2 className="mt-0 mb-0">{`Edit Item Type${
               params.itemTypeId ? " #" + params.itemTypeId : ""
             }`}</h2>
           </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="name">ID</Label>
-            <Input
-              type="number"
-              id="id"
-              autoComplete="off"
-              readOnly
-              disabled
-              value={loaderData.itemType?.id}
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              type="text"
-              id="name"
-              name="name"
-              autoComplete="off"
-              required
-              defaultValue={loaderData.itemType?.name}
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Input
-              type="text"
-              id="description"
-              name="description"
-              autoComplete="off"
-              defaultValue={loaderData.itemType?.description ?? undefined}
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="createdAt">Item type creation date</Label>
-            <Input
-              type="date"
-              id="createdAt"
-              readOnly
-              disabled
-              defaultValue={
-                loaderData.itemType?.createdAt != null
-                  ? DateTime.fromMillis(
-                      loaderData.itemType?.createdAt
-                    ).toISODate() ?? undefined
-                  : undefined
-              }
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="updatedAt">Last updated date</Label>
-            <Input
-              type="date"
-              id="updatedAt"
-              readOnly
-              disabled
-              defaultValue={
-                loaderData.itemType?.updatedAt != null
-                  ? DateTime.fromMillis(
-                      loaderData.itemType?.updatedAt
-                    ).toISODate() ?? undefined
-                  : undefined
-              }
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Button className="w-fit">Edit</Button>
-          </div>
+          <Field
+            type="number"
+            id="id"
+            readOnly
+            disabled
+            label="ID"
+            value={loaderData.itemType?.id}
+            fieldErrors={fetcher.data?.errors?.id}
+          />
+          <Field
+            name="name"
+            required
+            defaultValue={loaderData.itemType?.name}
+            label="Name"
+            fieldErrors={fetcher.data?.errors?.name}
+          />
+          <Field
+            name="description"
+            defaultValue={loaderData.itemType?.description ?? undefined}
+            label="Description"
+            fieldErrors={fetcher.data?.errors?.description}
+          />
+          <Field
+            type="date"
+            id="createdAt"
+            readOnly
+            disabled
+            defaultValue={
+              loaderData.itemType?.createdAt != null
+                ? DateTime.fromMillis(
+                    loaderData.itemType?.createdAt
+                  ).toISODate() ?? undefined
+                : undefined
+            }
+            label="Item type creation date"
+            fieldErrors={fetcher.data?.errors?.createdAt}
+          />
+          <Field
+            type="date"
+            id="createdAt"
+            readOnly
+            disabled
+            defaultValue={
+              loaderData.itemType?.updatedAt != null
+                ? DateTime.fromMillis(
+                    loaderData.itemType?.updatedAt
+                  ).toISODate() ?? undefined
+                : undefined
+            }
+            label="Last updated date"
+            fieldErrors={fetcher.data?.errors?.createdAt}
+          />
+          <SubmitButton fetcher={fetcher}>Edit</SubmitButton>
         </Form>
       )}
     </Main>

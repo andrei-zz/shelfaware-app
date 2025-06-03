@@ -3,20 +3,27 @@ import type React from "react";
 import { cn } from "~/lib/utils";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { FieldError } from "./field-error";
 
 export const PositionFieldset = ({
   legendProps,
   fieldContainerProps,
-  floorInputProps,
+  plateInputProps,
   rowInputProps,
   colInputProps,
+  plateFieldErrors,
+  rowFieldErrors,
+  colFieldErrors,
   ...props
 }: React.ComponentProps<"fieldset"> & {
   legendProps?: React.ComponentProps<"legend">;
   fieldContainerProps?: React.ComponentProps<"div">;
-  floorInputProps?: React.ComponentProps<typeof Input>;
+  plateInputProps?: React.ComponentProps<typeof Input>;
   rowInputProps?: React.ComponentProps<typeof Input>;
   colInputProps?: React.ComponentProps<typeof Input>;
+  plateFieldErrors?: string[];
+  rowFieldErrors?: string[];
+  colFieldErrors?: string[];
 }) => {
   return (
     <fieldset
@@ -39,15 +46,20 @@ export const PositionFieldset = ({
           fieldContainerProps?.className
         )}
       >
-        <Label htmlFor="floor">Floor</Label>
+        <Label htmlFor="plate">Plate</Label>
         <Input
           type="number"
           step="1"
-          id="floor"
-          name="floor"
-          {...floorInputProps}
-          className={cn("w-full", floorInputProps?.className)}
+          id="plate"
+          name="plate"
+          {...plateInputProps}
+          className={cn("w-full", plateInputProps?.className)}
         />
+        {Array.isArray(plateFieldErrors) && plateFieldErrors.length > 0 ? (
+          <FieldError className="col-span-1 sm:col-span-2">
+            {plateFieldErrors[0]}
+          </FieldError>
+        ) : null}
         <Label htmlFor="row">Row</Label>
         <Input
           type="number"
@@ -57,6 +69,11 @@ export const PositionFieldset = ({
           {...rowInputProps}
           className={cn("w-full", rowInputProps?.className)}
         />
+        {Array.isArray(rowFieldErrors) && rowFieldErrors.length > 0 ? (
+          <FieldError className="col-span-1 sm:col-span-2">
+            {rowFieldErrors[0]}
+          </FieldError>
+        ) : null}
         <Label htmlFor="col">Column</Label>
         <Input
           type="number"
@@ -66,6 +83,11 @@ export const PositionFieldset = ({
           {...colInputProps}
           className={cn("w-full", colInputProps?.className)}
         />
+        {Array.isArray(colFieldErrors) && colFieldErrors.length > 0 ? (
+          <FieldError className="col-span-1 sm:col-span-2">
+            {colFieldErrors[0]}
+          </FieldError>
+        ) : null}
       </div>
     </fieldset>
   );

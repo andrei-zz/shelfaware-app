@@ -2,11 +2,10 @@ import type { Route } from "./+types/route";
 
 import { redirect, useFetcher } from "react-router";
 
-import { Form } from "~/components/form/form";
 import { Main } from "~/components/main";
-import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
+import { Form } from "~/components/form/form";
+import { Field } from "~/components/form/field";
+import { SubmitButton } from "~/components/form/submit-button";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -61,38 +60,22 @@ const NewItemTypePage = ({}: Route.ComponentProps) => {
 
   return (
     <Main>
-      <Form
-        fetcherKey="new-item-type"
-        method="POST"
-        encType="multipart/form-data"
-      >
+      <Form fetcher={fetcher} method="POST" encType="multipart/form-data">
         <div className="flex items-center justify-between">
           <h2 className="mt-0 mb-0">Create Item Type</h2>
         </div>
-        <div className="flex flex-col w-full space-y-2">
-          <Label htmlFor="name">Name</Label>
-          <Input
-            type="text"
-            id="name"
-            name="name"
-            autoComplete="off"
-            required
-            className="w-full"
-          />
-        </div>
-        <div className="flex flex-col w-full space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Input
-            type="text"
-            id="description"
-            name="description"
-            autoComplete="off"
-            className="w-full"
-          />
-        </div>
-        <div className="flex flex-col w-full space-y-2">
-          <Button className="w-fit">Create</Button>
-        </div>
+        <Field
+          name="name"
+          required
+          label="Name"
+          fieldErrors={fetcher.data?.errors?.name}
+        />
+        <Field
+          name="description"
+          label="Description"
+          fieldErrors={fetcher.data?.errors?.description}
+        />
+        <SubmitButton fetcher={fetcher}>Create</SubmitButton>
       </Form>
     </Main>
   );

@@ -4,9 +4,9 @@ import { redirect, useFetcher } from "react-router";
 
 import { Main } from "~/components/main";
 import { Form } from "~/components/form/form";
-import { Label } from "~/components/ui/label";
-import { Input } from "~/components/ui/input";
-import { Button } from "~/components/ui/button";
+import { Field } from "~/components/form/field";
+import { ImageField } from "~/components/form/image-field";
+import { SubmitButton } from "~/components/form/submit-button";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -59,43 +59,27 @@ const NewImagePage = ({}: Route.ComponentProps) => {
 
   return (
     <Main>
-      <Form fetcherKey="new-image" method="POST" encType="multipart/form-data">
+      <Form fetcher={fetcher} method="POST" encType="multipart/form-data">
         <div className="flex items-center justify-between">
           <h2 className="mt-0 mb-0">Create Image</h2>
         </div>
-        <div className="flex flex-col w-full space-y-2">
-          <Label htmlFor="title">Title</Label>
-          <Input
-            type="text"
-            id="title"
-            name="title"
-            autoComplete="off"
-            className="w-full"
-          />
-        </div>
-        <div className="flex flex-col w-full space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Input
-            type="text"
-            id="description"
-            name="description"
-            autoComplete="off"
-            className="w-full"
-          />
-        </div>
-        <div className="flex flex-col w-full space-y-2">
-          <Label htmlFor="image">Image</Label>
-          <Input
-            type="file"
-            accept="image/*"
-            id="image"
-            name="image"
-            className="text-sm"
-          />
-        </div>
-        <div className="flex flex-col w-full space-y-2">
-          <Button className="w-fit">Create</Button>
-        </div>
+        <Field
+          type="number"
+          name="title"
+          label="Title"
+          fieldErrors={fetcher.data?.errors?.title}
+        />
+        <Field
+          name="description"
+          label="Description"
+          fieldErrors={fetcher.data?.errors?.description}
+        />
+        <ImageField
+          imageFileFieldName="image"
+          label="Image"
+          imageFileFieldErrors={fetcher.data?.errors?.image}
+        />
+        <SubmitButton fetcher={fetcher}>Create</SubmitButton>
       </Form>
     </Main>
   );

@@ -11,20 +11,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import { FieldError } from "./field-error";
 
 export const TagField = ({
   tags,
   tag,
   name,
   label,
+  fieldErrors,
   ...props
 }: React.ComponentProps<typeof Select> & {
   tags?: Awaited<ReturnType<typeof getTagsWithRawItems>>;
   tag?: Exclude<Awaited<ReturnType<typeof getItem>>, undefined>["tag"];
   label?: string;
+  fieldErrors?: string[];
 }) => {
   const [tagIdValue, setTagIdValue] = useState<string | undefined>(
-    tag?.id?.toString()
+    tag?.id?.toString() ?? ""
   );
 
   useEffect(() => {
@@ -67,6 +70,11 @@ export const TagField = ({
           )}
         </SelectContent>
       </Select>
+      {Array.isArray(fieldErrors) && fieldErrors.length > 0 ? (
+        <FieldError className="col-span-1 sm:col-span-2">
+          {fieldErrors[0]}
+        </FieldError>
+      ) : null}
     </div>
   );
 };

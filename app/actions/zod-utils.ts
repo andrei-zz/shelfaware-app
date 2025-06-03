@@ -138,53 +138,37 @@ const isRecord = (x: unknown): x is Record<string, unknown> =>
  */
 const parsePayload = <T>(
   raw: unknown,
-  candidates: Array<{
-    schema: ZodSchema<T>;
-    dummy?: Partial<T>;
-  }>
+  schema: ZodSchema<T>,
+  dummy?: Partial<T>
 ): T => {
   if (!isRecord(raw)) {
     throw new Error("Payload must be an object");
   }
   const input = { ...raw };
 
-  for (const { schema, dummy } of candidates) {
-    // merge in only those dummy fields that are truly missing or undefined
-    const merged: Record<string, unknown> = { ...input };
-    if (dummy) {
-      for (const key of Object.keys(dummy)) {
-        if (!(key in merged) || merged[key] === undefined) {
-          merged[key] = dummy[key as keyof typeof dummy];
-        }
-      }
-    }
-
-    // try to parse
-    try {
-      const parsed = schema.parse(merged);
-
-      // strip back out any dummy fields we injected
-      if (dummy) {
-        for (const key of Object.keys(dummy) as (keyof T)[]) {
-          if (!(key in raw) || (raw as any)[key] === undefined) {
-            delete (parsed as any)[key];
-          }
-        }
-      }
-
-      return parsed;
-    } catch (e: unknown) {
-      if (e instanceof ZodError) {
-        // swallow and try the next schema
-        continue;
-      } else {
-        throw e;
+  // merge in only those dummy fields that are truly missing or undefined
+  const merged: Record<string, unknown> = { ...input };
+  if (dummy) {
+    for (const key of Object.keys(dummy)) {
+      if (!(key in merged) || merged[key] === undefined) {
+        merged[key] = dummy[key as keyof typeof dummy];
       }
     }
   }
 
-  // if we get here, none matched
-  throw new Error("Payload did not match any of the expected shapes");
+  // just parse
+  const parsed = schema.parse(merged);
+
+  // strip back out any dummy fields we injected
+  if (dummy) {
+    for (const key of Object.keys(dummy) as (keyof T)[]) {
+      if (!(key in raw) || (raw as any)[key] === undefined) {
+        delete (parsed as any)[key];
+      }
+    }
+  }
+
+  return parsed;
 };
 
 /**
@@ -193,17 +177,15 @@ const parsePayload = <T>(
  */
 export const parseFormPayload = <T>(
   form: Record<string, unknown>,
-  schemas: Array<{
-    schema: ZodSchema<T>;
-    dummy?: Partial<T>;
-  }>
+  schema: ZodSchema<T>,
+  dummy?: Partial<T>
 ): T => {
   const rawObj: Record<string, unknown> = {};
   for (const [key, val] of Object.entries(form)) {
     if (val instanceof File) continue;
     rawObj[key] = val;
   }
-  return parsePayload(rawObj, schemas);
+  return parsePayload(rawObj, schema, dummy);
 };
 
 /**
@@ -211,8 +193,6 @@ export const parseFormPayload = <T>(
  */
 export const parseJsonPayload = <T>(
   jsonData: unknown,
-  schemas: Array<{
-    schema: ZodSchema<T>;
-    dummy?: Partial<T>;
-  }>
-): T => parsePayload(jsonData, schemas);
+  schema: ZodSchema<T>,
+  dummy?: Partial<T>
+): T => parsePayload(jsonData, schema, dummy);

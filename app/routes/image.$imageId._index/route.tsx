@@ -7,10 +7,9 @@ import { getImage, getImages } from "~/actions/select.server";
 
 import { Main } from "~/components/main";
 import { Form } from "~/components/form/form";
-import { Image } from "~/components/image";
-import { Label } from "~/components/ui/label";
-import { Input } from "~/components/ui/input";
-import { Button } from "~/components/ui/button";
+import { Field } from "~/components/form/field";
+import { ImageField } from "~/components/form/image-field";
+import { SubmitButton } from "~/components/form/submit-button";
 
 export const meta = ({ params }: Route.MetaArgs) => {
   return [
@@ -84,124 +83,79 @@ const EditImagePage = ({ params, loaderData }: Route.ComponentProps) => {
           Image not found
         </div>
       ) : (
-        <Form
-          fetcherKey="edit-image"
-          method="PATCH"
-          encType="multipart/form-data"
-        >
+        <Form fetcher={fetcher} method="PATCH" encType="multipart/form-data">
           <div className="flex items-center justify-between">
             <h2 className="mt-0 mb-0">{`Edit Image${
               params.imageId ? " #" + params.imageId : ""
             }`}</h2>
           </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="name">ID</Label>
-            <Input
-              type="number"
-              id="id"
-              autoComplete="off"
-              readOnly
-              disabled
-              value={loaderData.image?.id}
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              type="text"
-              id="title"
-              name="title"
-              autoComplete="off"
-              defaultValue={loaderData.image?.title ?? undefined}
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Input
-              type="text"
-              id="description"
-              name="description"
-              autoComplete="off"
-              defaultValue={loaderData.image?.description ?? undefined}
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="image">Image</Label>
-            <Input
-              type="file"
-              accept="image/*"
-              id="image"
-              name="image"
-              className="text-sm"
-            />
-            <div className="flex flex-col">
-              <span className="text-sm font-light">Current</span>
-              <Image
-                src={
-                  loaderData.image == null
-                    ? undefined
-                    : `/api/image?id=${loaderData.image.id}`
-                }
-                size="lg"
-                containerProps={{
-                  className: "hover:bg-accent hover:**:opacity-80",
-                }}
-              />
-            </div>
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="mimeType">MIME type</Label>
-            <Input
-              type="text"
-              id="mimeType"
-              name="mimeType"
-              autoComplete="off"
-              readOnly
-              disabled
-              defaultValue={loaderData.image?.mimeType ?? undefined}
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="createdAt">Image creation date</Label>
-            <Input
-              type="date"
-              id="createdAt"
-              readOnly
-              disabled
-              defaultValue={
-                loaderData.image?.createdAt != null
-                  ? DateTime.fromMillis(
-                      loaderData.image?.createdAt
-                    ).toISODate() ?? undefined
-                  : undefined
-              }
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="replacedAt">Replaced date</Label>
-            <Input
-              type="date"
-              id="replacedAt"
-              readOnly
-              disabled
-              defaultValue={
-                loaderData.image?.replacedAt != null
-                  ? DateTime.fromMillis(
-                      loaderData.image?.replacedAt
-                    ).toISODate() ?? undefined
-                  : undefined
-              }
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Button className="w-fit">Edit</Button>
-          </div>
+          <Field
+            type="number"
+            id="id"
+            readOnly
+            disabled
+            label="ID"
+            value={loaderData.image?.id}
+            fieldErrors={fetcher.data?.errors?.id}
+          />
+          <Field
+            type="number"
+            name="title"
+            label="Title"
+            defaultValue={loaderData.image?.title ?? undefined}
+            fieldErrors={fetcher.data?.errors?.title}
+          />
+          <Field
+            name="description"
+            defaultValue={loaderData.image?.description ?? undefined}
+            label="Description"
+            fieldErrors={fetcher.data?.errors?.description}
+          />
+          <ImageField
+            imageFileFieldName="image"
+            label="Image"
+            image={loaderData.image ?? undefined}
+            imageFileFieldErrors={fetcher.data?.errors?.image}
+          />
+          <Field
+            name="mimeType"
+            readOnly
+            disabled
+            defaultValue={loaderData.image?.mimeType ?? undefined}
+            label="MIME type"
+            fieldErrors={fetcher.data?.errors?.mimeType}
+          />
+          <Field
+            type="date"
+            id="createdAt"
+            readOnly
+            disabled
+            defaultValue={
+              loaderData.image?.createdAt != null
+                ? DateTime.fromMillis(
+                    loaderData.image?.createdAt
+                  ).toISODate() ?? undefined
+                : undefined
+            }
+            label="Image creation date"
+            fieldErrors={fetcher.data?.errors?.createdAt}
+          />
+          <Field
+            type="date"
+            id="replacedAt"
+            readOnly
+            disabled
+            defaultValue={
+              loaderData.image?.replacedAt != null
+                ? DateTime.fromMillis(
+                    loaderData.image?.replacedAt
+                  ).toISODate() ?? undefined
+                : undefined
+            }
+            label="Replaced date"
+            fieldErrors={fetcher.data?.errors?.replacedAt}
+          />
+          <SubmitButton fetcher={fetcher}>Edit</SubmitButton>
         </Form>
       )}
     </Main>

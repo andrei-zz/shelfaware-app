@@ -79,6 +79,16 @@ const AppWithProviders = ({ loaderData }: Route.ComponentProps) => {
 };
 export default AppWithProviders;
 
+export const HydrateFallback = ({}: Route.HydrateFallbackProps) => {
+  return (
+    <AppLayout>
+      <Main>
+        <div className="text-9xl font-black">LOADING...</div>
+      </Main>
+    </AppLayout>
+  );
+};
+
 export const ErrorBoundary = ({ error }: Route.ErrorBoundaryProps) => {
   let message = "Oops!";
   let details = "An unexpected error occurred.";

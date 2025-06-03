@@ -12,14 +12,13 @@ import {
 
 import { Main } from "~/components/main";
 import { Form } from "~/components/form/form";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import { Checkbox } from "~/components/ui/checkbox";
-import { Button } from "~/components/ui/button";
 import { PositionFieldset } from "~/components/form/position-fieldset";
 import { TagField } from "~/components/form/tag-field";
 import { ImageField } from "~/components/form/image-field";
 import { ItemTypeField } from "~/components/form/item-type-field";
+import { SubmitButton } from "~/components/form/submit-button";
+import { Field } from "~/components/form/field";
+import { CheckboxField } from "~/components/form/checkbox-field";
 
 export const meta = ({ params }: Route.MetaArgs) => {
   return [
@@ -51,6 +50,8 @@ export const action = async ({ request, params }: Route.ActionArgs) => {
 
   const formData = await request.formData();
   formData.append("id", params.itemId);
+
+  await new Promise((resolve) => setTimeout(resolve, 5000));
 
   const res = await fetch(itemApiUrl, {
     method: request.method,
@@ -97,7 +98,7 @@ const EditItemPage = ({ params, loaderData }: Route.ComponentProps) => {
         </div>
       ) : (
         <Form
-          fetcherKey="edit-item"
+          fetcher={fetcher}
           method="PATCH"
           encType="multipart/form-data"
           navigate={false}
@@ -107,141 +108,107 @@ const EditItemPage = ({ params, loaderData }: Route.ComponentProps) => {
               params.itemId ? " #" + params.itemId : ""
             }`}</h2>
           </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="name">ID</Label>
-            <Input
-              type="number"
-              id="id"
-              autoComplete="off"
-              readOnly
-              disabled
-              value={loaderData.item?.id}
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              type="text"
-              id="name"
-              name="name"
-              autoComplete="off"
-              required
-              defaultValue={loaderData.item?.name}
-              className="w-full"
-            />
-          </div>
+          <Field
+            type="number"
+            id="id"
+            readOnly
+            disabled
+            label="ID"
+            value={loaderData.item?.id}
+            fieldErrors={fetcher.data?.errors?.id}
+          />
+          <Field
+            name="name"
+            required
+            defaultValue={loaderData.item?.name}
+            label="Name"
+            fieldErrors={fetcher.data?.errors?.name}
+          />
           <ItemTypeField
             itemTypeIdFieldName="itemTypeId"
             itemTypeNameFieldName="itemTypeName"
             label="Type"
             itemType={loaderData.item?.type ?? undefined}
             itemTypes={loaderData.itemTypes ?? undefined}
+            itemTypeIdFieldErrors={fetcher.data?.errors?.itemTypeId}
+            itemTypeNameFieldErrors={fetcher.data?.errors?.itemTypeName}
           />
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Input
-              type="text"
-              id="description"
-              name="description"
-              autoComplete="off"
-              defaultValue={loaderData.item?.description ?? undefined}
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="expireAt">Expiration date</Label>
-            <Input
-              type="date"
-              id="expireAt"
-              name="expireAt"
-              // min={DateTime.now().toISODate()}
-              defaultValue={
-                loaderData.item?.expireAt != null
-                  ? DateTime.fromMillis(
-                      loaderData.item?.expireAt
-                    ).toISODate() ?? undefined
-                  : undefined
-              }
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="originalWeight">Original weight (in grams)</Label>
-            <Input
-              type="number"
-              id="originalWeight"
-              name="originalWeight"
-              defaultValue={loaderData.item?.originalWeight ?? undefined}
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="currentWeight">Current weight (in grams)</Label>
-            <Input
-              type="number"
-              id="currentWeight"
-              name="currentWeight"
-              placeholder="Same as original weight"
-              defaultValue={loaderData.item?.currentWeight ?? undefined}
-              className="w-full"
-            />
-          </div>
-          <div className="my-0.5 flex w-full items-center space-x-2">
-            <Checkbox
-              id="isPresent"
-              name="isPresent"
-              defaultChecked={loaderData.item?.isPresent ?? true}
-            />
-            <Label htmlFor="isPresent">
-              Mark item as currently in the fridge
-            </Label>
-          </div>
+          <Field
+            name="description"
+            defaultValue={loaderData.item?.description ?? undefined}
+            label="Description"
+            fieldErrors={fetcher.data?.errors?.description}
+          />
+          <Field
+            type="date"
+            name="expireAt"
+            // min={DateTime.now().toISODate()}
+            defaultValue={
+              loaderData.item?.expireAt != null
+                ? DateTime.fromMillis(loaderData.item?.expireAt).toISODate() ??
+                  undefined
+                : undefined
+            }
+            label="Expiration date"
+            fieldErrors={fetcher.data?.errors?.expireAt}
+          />
+          <Field
+            type="number"
+            name="currentWeight"
+            placeholder="Same as original weight"
+            defaultValue={loaderData.item?.currentWeight ?? undefined}
+            label="Current weight (in grams)"
+            fieldErrors={fetcher.data?.errors?.currentWeight}
+          />
+          <CheckboxField
+            name="isPresent"
+            defaultChecked={loaderData.item?.isPresent ?? true}
+            label="Mark item as currently in the fridge"
+            fieldErrors={fetcher.data?.errors?.isPresent}
+          />
           <PositionFieldset
-            floorInputProps={{
-              defaultValue: loaderData.item?.floor ?? undefined,
+            plateInputProps={{
+              defaultValue: loaderData.item?.plate ?? undefined,
             }}
             rowInputProps={{ defaultValue: loaderData.item?.row ?? undefined }}
             colInputProps={{ defaultValue: loaderData.item?.col ?? undefined }}
+            plateFieldErrors={fetcher.data?.errors?.plate}
+            rowFieldErrors={fetcher.data?.errors?.row}
+            colFieldErrors={fetcher.data?.errors?.col}
           />
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="createdAt">Item creation date</Label>
-            <Input
-              type="date"
-              id="createdAt"
-              readOnly
-              disabled
-              defaultValue={
-                loaderData.item?.createdAt != null
-                  ? DateTime.fromMillis(
-                      loaderData.item?.createdAt
-                    ).toISODate() ?? undefined
-                  : undefined
-              }
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="updatedAt">Last updated date</Label>
-            <Input
-              type="date"
-              id="updatedAt"
-              readOnly
-              disabled
-              defaultValue={
-                loaderData.item?.updatedAt != null
-                  ? DateTime.fromMillis(
-                      loaderData.item?.updatedAt
-                    ).toISODate() ?? undefined
-                  : undefined
-              }
-              className="w-full"
-            />
-          </div>
+          <Field
+            type="date"
+            id="createdAt"
+            readOnly
+            disabled
+            defaultValue={
+              loaderData.item?.createdAt != null
+                ? DateTime.fromMillis(loaderData.item?.createdAt).toISODate() ??
+                  undefined
+                : undefined
+            }
+            label="Item creation date"
+            fieldErrors={fetcher.data?.errors?.createdAt}
+          />
+          <Field
+            type="date"
+            id="updatedAt"
+            readOnly
+            disabled
+            defaultValue={
+              loaderData.item?.updatedAt != null
+                ? DateTime.fromMillis(loaderData.item?.updatedAt).toISODate() ??
+                  undefined
+                : undefined
+            }
+            label="Last updated date"
+            fieldErrors={fetcher.data?.errors?.updatedAt}
+          />
           <TagField
             name="tagId"
             tags={loaderData.tags}
             tag={loaderData.item.tag}
+            fieldErrors={fetcher.data?.errors?.tagId}
           />
           <ImageField
             imageFileFieldName="image"
@@ -249,10 +216,10 @@ const EditItemPage = ({ params, loaderData }: Route.ComponentProps) => {
             label="Image"
             image={loaderData.item?.image ?? undefined}
             images={loaderData.images}
+            imageFileFieldErrors={fetcher.data?.errors?.image}
+            imageIdFieldErrors={fetcher.data?.errors?.imageId}
           />
-          <div className="flex flex-col w-full space-y-2">
-            <Button className="w-fit">Edit</Button>
-          </div>
+          <SubmitButton fetcher={fetcher}>Edit</SubmitButton>
         </Form>
       )}
     </Main>

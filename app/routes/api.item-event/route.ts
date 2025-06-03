@@ -12,9 +12,33 @@ import {
 } from "~/actions/insert.server";
 import { getItemByUid, getItemEvent } from "~/actions/select.server";
 import { putS3Object } from "~/actions/s3.server";
-import { makeApiSchema } from "~/actions/zod-utils";
+import {
+  makeApiSchema,
+  parseFormPayload,
+  parseJsonPayload,
+} from "~/actions/zod-utils";
+import { uploadImage } from "~/actions/image.server";
 
 const PATHNAME = "/api/item-event";
+
+const postSchema = makeApiSchema(
+  createItemEventSchema
+    .partial({ itemId: true })
+    .extend({ uid: uidSchema.optional() })
+).superRefine((data, ctx) => {
+  if (data.itemId == null && data.uid == null) {
+    ctx.addIssue({
+      path: ["itemId"],
+      message: "Either itemId or uid must be provided",
+      code: z.ZodIssueCode.custom,
+    });
+    ctx.addIssue({
+      path: ["uid"],
+      message: "Either uid or itemId must be provided",
+      code: z.ZodIssueCode.custom,
+    });
+  }
+});
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   let relativeUrl: string = PATHNAME;
@@ -80,38 +104,44 @@ export const action = async ({ request }: Route.ActionArgs) => {
     if (reqContentType?.startsWith("multipart/form-data")) {
       const reqFormData = await request.formData();
       const { image, ...formData } = Object.fromEntries(reqFormData);
-      payload = formData;
       if (image instanceof File) {
         imageFile = image;
       }
+
+      const dummy: Record<string, unknown> = {};
+      if (
+        imageFile?.size != null &&
+        imageFile.size > 0 &&
+        imageFile.size <= 10 * 1024 * 1024
+      ) {
+        dummy.imageId = 0;
+      }
+      payload = parseFormPayload(formData, postSchema, dummy);
     } else if (reqContentType?.startsWith("application/json")) {
-      payload = await request.json();
+      const jsonData = await request.json();
+      payload = parseJsonPayload(jsonData, postSchema);
     } else {
       return new Response("Invalid Content-Type", { status: 400 });
     }
   } catch (err: unknown) {
+    if (err instanceof z.ZodError) {
+      return Response.json(
+        { message: "Bad Request", errors: err.flatten().fieldErrors },
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
     console.error(`${relativeUrl}:action\n`, err, "\n");
     return new Response("Internal Server Error", {
       status: 500,
     });
   }
 
-  if (
-    imageFile?.size != null &&
-    imageFile.size > 0 &&
-    imageFile.size <= 10 * 1024 * 1024
-  ) {
-    const s3Key = crypto.randomUUID();
-    const arrayBuffer = await imageFile.arrayBuffer();
-    const imageBuffer = Buffer.from(arrayBuffer);
-    const parsed = createImageSchema.parse({ s3Key, mimeType: imageFile.type });
-    const [image] = await Promise.all([
-      createImage(parsed),
-
-      ...(imageBuffer != null ? [putS3Object(s3Key, imageBuffer)] : []),
-    ]);
-    payload.imageId = image.id;
-  }
+  const image = await uploadImage(imageFile);
+  payload.imageId = image?.id;
 
   if (imageFile != null && !payload.imageId) {
     return new Response("Invalid image file", { status: 400 });
@@ -120,26 +150,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   try {
     switch (request.method) {
       case "POST": {
-        const itemEventPayload = makeApiSchema(
-          createItemEventSchema
-            .partial({ itemId: true })
-            .extend({ uid: uidSchema.optional() })
-        )
-          .superRefine((data, ctx) => {
-            if (data.itemId == null && data.uid == null) {
-              ctx.addIssue({
-                path: ["itemId"],
-                message: "Either itemId or uid must be provided",
-                code: z.ZodIssueCode.custom,
-              });
-              ctx.addIssue({
-                path: ["uid"],
-                message: "Either uid or itemId must be provided",
-                code: z.ZodIssueCode.custom,
-              });
-            }
-          })
-          .parse(payload);
+        const itemEventPayload = postSchema.parse(payload);
 
         let itemId: number;
         if (itemEventPayload.itemId != null) {
@@ -177,8 +188,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
       }
     }
   } catch (err: unknown) {
-    console.error(`${relativeUrl}:action\n`, err, "\n");
-
     if (err instanceof z.ZodError) {
       return Response.json(
         { message: "Bad Request", errors: err.flatten().fieldErrors },
@@ -189,6 +198,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
       );
     }
 
+    console.error(`${relativeUrl}:action\n`, err, "\n");
     return new Response("Internal Server Error", {
       status: 500,
     });

@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
+import { FieldError } from "./field-error";
 
 interface ItemTypeFieldProps {
   itemTypeIdFieldName?: string;
@@ -20,6 +21,8 @@ interface ItemTypeFieldProps {
   label?: string;
   itemType?: Awaited<ReturnType<typeof getItemType>>;
   itemTypes?: Awaited<ReturnType<typeof getItemTypes>>;
+  itemTypeIdFieldErrors?: string[];
+  itemTypeNameFieldErrors?: string[];
 }
 
 export const ItemTypeField = ({
@@ -28,6 +31,8 @@ export const ItemTypeField = ({
   label,
   itemType,
   itemTypes,
+  itemTypeIdFieldErrors,
+  itemTypeNameFieldErrors,
 }: ItemTypeFieldProps) => {
   const [mode, setMode] = useState<"existing" | "new">("existing");
   const [itemTypeIdValue, setItemTypeIdValue] = useState<string | undefined>(
@@ -120,6 +125,15 @@ export const ItemTypeField = ({
           className="w-full"
         />
       )}
+      {mode === "existing" ? (
+        Array.isArray(itemTypeIdFieldErrors) &&
+        itemTypeIdFieldErrors.length > 0 ? (
+          <FieldError>{itemTypeIdFieldErrors[0]}</FieldError>
+        ) : null
+      ) : Array.isArray(itemTypeNameFieldErrors) &&
+        itemTypeNameFieldErrors.length > 0 ? (
+        <FieldError>{itemTypeNameFieldErrors[0]}</FieldError>
+      ) : null}
     </div>
   );
 };

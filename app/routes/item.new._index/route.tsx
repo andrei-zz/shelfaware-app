@@ -6,16 +6,15 @@ import {
   getItemTypes,
   getTagsWithRawItems,
 } from "~/actions/select.server";
-import { Label } from "~/components/ui/label";
-import { Input } from "~/components/ui/input";
-import { Checkbox } from "~/components/ui/checkbox";
-import { Button } from "~/components/ui/button";
 import { TagField } from "~/components/form/tag-field";
 import { ImageField } from "~/components/form/image-field";
 import { Main } from "~/components/main";
 import { Form } from "~/components/form/form";
 import { PositionFieldset } from "~/components/form/position-fieldset";
 import { ItemTypeField } from "~/components/form/item-type-field";
+import { Field } from "~/components/form/field";
+import { CheckboxField } from "~/components/form/checkbox-field";
+import { SubmitButton } from "~/components/form/submit-button";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -76,85 +75,73 @@ const NewItemPage = ({ loaderData }: Route.ComponentProps) => {
 
   return (
     <Main>
-      <Form fetcherKey="new-item" method="POST" encType="multipart/form-data">
+      <Form fetcher={fetcher} method="POST" encType="multipart/form-data">
         <div className="flex items-center justify-between">
           <h2 className="mt-0 mb-0">Create Item</h2>
         </div>
-        <div className="flex flex-col w-full space-y-2">
-          <Label htmlFor="name">Name</Label>
-          <Input
-            type="text"
-            id="name"
-            name="name"
-            autoComplete="off"
-            required
-            className="w-full"
-          />
-        </div>
+        <Field
+          name="name"
+          required
+          label="Name"
+          fieldErrors={fetcher.data?.errors?.name}
+        />
         <ItemTypeField
           itemTypeIdFieldName="itemTypeId"
           itemTypeNameFieldName="itemTypeName"
           label="Type"
           itemTypes={loaderData.itemTypes ?? undefined}
+          itemTypeIdFieldErrors={fetcher.data?.errors?.itemTypeId}
+          itemTypeNameFieldErrors={fetcher.data?.errors?.itemTypeName}
         />
-        <div className="flex flex-col w-full space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Input
-            type="text"
-            id="description"
-            name="description"
-            autoComplete="off"
-            className="w-full"
-          />
-        </div>
-        <div className="flex flex-col w-full space-y-2">
-          <Label htmlFor="expireAt">Expiration date</Label>
-          <Input
-            type="date"
-            id="expireAt"
-            name="expireAt"
-            // min={DateTime.now().toISODate()}
-            className="w-full"
-          />
-        </div>
-        <div className="flex flex-col w-full space-y-2">
-          <Label htmlFor="originalWeight">Original weight (in grams)</Label>
-          <Input
-            type="number"
-            id="originalWeight"
-            name="originalWeight"
-            className="w-full"
-          />
-        </div>
-        <div className="flex flex-col w-full space-y-2">
-          <Label htmlFor="currentWeight">Current weight (in grams)</Label>
-          <Input
-            type="number"
-            id="currentWeight"
-            name="currentWeight"
-            placeholder="Same as original weight"
-            className="w-full"
-          />
-        </div>
-        <div className="my-0.5 flex w-full items-center space-x-2">
-          <Checkbox id="isPresent" name="isPresent" defaultChecked />
-          <Label htmlFor="isPresent">
-            Mark item as currently in the fridge
-          </Label>
-        </div>
-        <PositionFieldset />
-        <TagField name="tagId" tags={loaderData.tags} />
+        <Field
+          name="description"
+          label="Description"
+          fieldErrors={fetcher.data?.errors?.description}
+        />
+        <Field
+          type="date"
+          name="expireAt"
+          // min={DateTime.now().toISODate()}
+          label="Expiration date"
+          fieldErrors={fetcher.data?.errors?.expireAt}
+        />
+        <Field
+          type="number"
+          name="originalWeight"
+          label="Original weight (in grams)"
+          fieldErrors={fetcher.data?.errors?.originalWeight}
+        />
+        <Field
+          type="number"
+          name="currentWeight"
+          label="Current weight (in grams)"
+          fieldErrors={fetcher.data?.errors?.currentWeight}
+        />
+        <CheckboxField
+          name="isPresent"
+          defaultChecked
+          label="Mark item as currently in the fridge"
+          fieldErrors={fetcher.data?.errors?.isPresent}
+        />
+        <PositionFieldset
+          plateFieldErrors={fetcher.data?.errors?.plate}
+          rowFieldErrors={fetcher.data?.errors?.row}
+          colFieldErrors={fetcher.data?.errors?.col}
+        />
+        <TagField
+          name="tagId"
+          tags={loaderData.tags}
+          fieldErrors={fetcher.data?.errors?.tagId}
+        />
         <ImageField
           imageFileFieldName="image"
           imageIdFieldName="imageId"
           label="Image"
           images={loaderData.images}
+          imageFileFieldErrors={fetcher.data?.errors?.image}
+          imageIdFieldErrors={fetcher.data?.errors?.imageId}
         />
-        <div className="flex flex-col w-full space-y-2">
-          <Button type="submit" className="w-fit">
-            Create
-          </Button>
-        </div>
+        <SubmitButton fetcher={fetcher}>Create</SubmitButton>
       </Form>
     </Main>
   );

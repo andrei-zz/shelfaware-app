@@ -15,6 +15,7 @@ import {
 } from "~/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
 import { cn } from "~/lib/utils";
+import { FieldError } from "./field-error";
 
 interface ImageFieldProps {
   imageFileFieldName?: string;
@@ -22,6 +23,8 @@ interface ImageFieldProps {
   label?: string;
   image?: Awaited<ReturnType<typeof getImage>>;
   images?: Awaited<ReturnType<typeof getImages>>;
+  imageFileFieldErrors?: string[];
+  imageIdFieldErrors?: string[];
 }
 
 export const ImageField = ({
@@ -30,6 +33,8 @@ export const ImageField = ({
   label,
   image,
   images,
+  imageFileFieldErrors,
+  imageIdFieldErrors,
 }: ImageFieldProps) => {
   const [mode, setMode] = useState<"file" | "existing">("file");
   const [imageIdValue, setImageIdValue] = useState<string>(
@@ -61,10 +66,18 @@ export const ImageField = ({
           variant="outline"
           size="sm"
         >
-          <ToggleGroupItem value="file" className="text-xs gap-x-1">
+          <ToggleGroupItem
+            value="file"
+            disabled={!imageFileFieldName}
+            className="text-xs gap-x-1"
+          >
             <FileUp /> Image upload
           </ToggleGroupItem>
-          <ToggleGroupItem value="existing" className="text-xs gap-x-1">
+          <ToggleGroupItem
+            value="existing"
+            disabled={!imageIdFieldName}
+            className="text-xs gap-x-1"
+          >
             <Database /> Existing image
           </ToggleGroupItem>
         </ToggleGroup>
@@ -158,6 +171,14 @@ export const ImageField = ({
             </div>
           ) : null}
         </div>
+      ) : null}
+      {mode === "existing" ? (
+        Array.isArray(imageIdFieldErrors) && imageIdFieldErrors.length > 0 ? (
+          <FieldError>{imageIdFieldErrors[0]}</FieldError>
+        ) : null
+      ) : Array.isArray(imageFileFieldErrors) &&
+        imageFileFieldErrors.length > 0 ? (
+        <FieldError>{imageFileFieldErrors[0]}</FieldError>
       ) : null}
     </div>
   );

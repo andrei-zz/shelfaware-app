@@ -3,8 +3,6 @@ import type { Route } from "./+types/route";
 import { ZodError } from "zod";
 
 import {
-  createImage,
-  createImageSchema,
   createItem,
   createItemSchema,
   createItemType,
@@ -16,13 +14,13 @@ import {
   updateItemSchema,
   updateTag,
 } from "~/actions/update.server";
-import { putS3Object } from "~/actions/s3.server";
 import {
   coerceTimestamp,
   makeApiSchema,
   parseFormPayload,
   parseJsonPayload,
 } from "~/actions/zod-utils";
+import { uploadImage } from "~/actions/image.server";
 
 const PATHNAME = "/api/item";
 
@@ -109,8 +107,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
       if (image instanceof File) {
         imageFile = image;
-      } else {
-        return new Response("Form image should be File", { status: 400 });
       }
       if (typeof formTagId === "string") {
         tagId = formTagId;
@@ -130,10 +126,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
       if (itemTypeName != null) {
         dummy.itemTypeId = 0;
       }
-      payload = parseFormPayload(formData, [
-        { schema: makeApiSchema(createItemSchema), dummy },
-        { schema: makeApiSchema(updateItemSchema), dummy },
-      ]);
+      payload =
+        request.method === "POST"
+          ? parseFormPayload(formData, makeApiSchema(createItemSchema), dummy)
+          : parseFormPayload(formData, makeApiSchema(updateItemSchema), dummy);
     } else if (reqContentType?.startsWith("application/json")) {
       const {
         tagId: jsonTagId,
@@ -152,10 +148,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
       if (itemTypeName != null) {
         dummy.itemTypeId = 0;
       }
-      payload = parseJsonPayload(jsonData, [
-        { schema: makeApiSchema(createItemSchema), dummy },
-        { schema: makeApiSchema(updateItemSchema), dummy },
-      ]);
+      payload =
+        request.method === "POST"
+          ? parseJsonPayload(jsonData, makeApiSchema(createItemSchema), dummy)
+          : parseJsonPayload(jsonData, makeApiSchema(updateItemSchema), dummy);
     } else {
       return new Response("Invalid Content-Type", { status: 400 });
     }
@@ -176,22 +172,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
     });
   }
 
-  if (
-    imageFile?.size != null &&
-    imageFile.size > 0 &&
-    imageFile.size <= 10 * 1024 * 1024
-  ) {
-    const s3Key = crypto.randomUUID();
-    const arrayBuffer = await imageFile.arrayBuffer();
-    const imageBuffer = Buffer.from(arrayBuffer);
-    const parsed = createImageSchema.parse({ s3Key, mimeType: imageFile.type });
-    const [image] = await Promise.all([
-      createImage(parsed),
-      ...(imageBuffer != null ? [putS3Object(s3Key, imageBuffer)] : []),
-    ]);
-    payload.imageId = image.id;
-  }
-
+  const image = await uploadImage(imageFile);
+  payload.imageId = image?.id;
   if (imageFile != null && !payload.imageId) {
     return new Response("Invalid image file", { status: 400 });
   }

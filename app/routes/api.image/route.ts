@@ -12,7 +12,12 @@ import {
   updateImageSchema,
 } from "~/actions/update.server";
 import { getSignedS3Url, putS3Object } from "~/actions/s3.server";
-import { makeApiSchema } from "~/actions/zod-utils";
+import {
+  makeApiSchema,
+  parseFormPayload,
+  parseJsonPayload,
+} from "~/actions/zod-utils";
+import { MAX_IMAGE_FILE_SIZE, uploadImage } from "~/actions/image.server";
 
 const PATHNAME = "/api/image";
 
@@ -69,52 +74,64 @@ export const action = async ({ request }: Route.ActionArgs) => {
     if (reqContentType?.startsWith("multipart/form-data")) {
       const reqFormData = await request.formData();
       const { image, ...formData } = Object.fromEntries(reqFormData);
-      payload = formData;
       if (image instanceof File) {
         imageFile = image;
       }
+
+      const dummy: Record<string, unknown> = {};
+      if (
+        imageFile?.size != null &&
+        imageFile.size > 0 &&
+        imageFile.size <= 10 * 1024 * 1024
+      ) {
+        if (request.method === "PATCH") {
+          dummy.id = 0;
+        }
+        dummy.s3Key = crypto.randomUUID();
+        dummy.mimeType = "image/gif";
+      }
+      payload =
+        request.method === "POST"
+          ? parseFormPayload(formData, makeApiSchema(createImageSchema), dummy)
+          : parseFormPayload(
+              formData,
+              makeApiSchema(replaceImageSchema),
+              dummy
+            );
     } else if (reqContentType?.startsWith("application/json")) {
-      payload = await request.json();
+      if (request.method === "POST") {
+        return new Response("Invalid Content-Type", { status: 400 });
+      }
+
+      const jsonData = await request.json();
+      payload = parseJsonPayload(jsonData, makeApiSchema(replaceImageSchema));
     } else {
       return new Response("Invalid Content-Type", { status: 400 });
     }
   } catch (err: unknown) {
+    if (err instanceof z.ZodError) {
+      return Response.json(
+        { message: "Bad Request", errors: err.flatten().fieldErrors },
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
     console.error(`${relativeUrl}:action\n`, err, "\n");
     return new Response("Internal Server Error", {
       status: 500,
     });
   }
 
-  let imageBuffer: Buffer<ArrayBuffer> | null = null;
-  let mimeType: string | null = null;
-  const s3Key = crypto.randomUUID();
-  if (
-    imageFile?.size != null &&
-    imageFile.size > 0 &&
-    imageFile.size <= 10 * 1024 * 1024
-  ) {
-    const arrayBuffer = await imageFile.arrayBuffer();
-    imageBuffer = Buffer.from(arrayBuffer);
-    mimeType = imageFile.type;
-  }
-
-  if (!imageFile || !imageBuffer) {
-    return new Response("Invalid or missing image file", { status: 400 });
-  }
-
   try {
     switch (request.method) {
       case "POST": {
-        const parsed = makeApiSchema(createImageSchema).parse({
-          ...payload,
-          s3Key,
-          mimeType,
-        });
-        const [newImage] = await Promise.all([
-          createImage(parsed),
-
-          ...(imageBuffer != null ? [putS3Object(s3Key, imageBuffer)] : []),
-        ]);
+        const newImage = await uploadImage(imageFile, payload);
+        if (newImage == null) {
+          return new Response("Invalid or missing image file", { status: 400 });
+        }
         const { s3Key: _, ...newImg } = newImage;
 
         return Response.json(newImg, {
@@ -125,7 +142,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
         });
       }
       case "PATCH": {
-        if (imageBuffer == null) {
+        if (imageFile == null) {
           const parsed = makeApiSchema(updateImageSchema).parse({
             ...payload,
             s3Key: null,
@@ -139,7 +156,16 @@ export const action = async ({ request }: Route.ActionArgs) => {
               "Content-Type": "application/json",
             },
           });
-        } else {
+        } else if (
+          imageFile.size != null &&
+          imageFile.size > 0 &&
+          imageFile.size <= MAX_IMAGE_FILE_SIZE
+        ) {
+          const arrayBuffer = await imageFile.arrayBuffer();
+          const imageBuffer = Buffer.from(arrayBuffer);
+          const mimeType = imageFile.type;
+          const s3Key = crypto.randomUUID();
+
           const parsed = makeApiSchema(replaceImageSchema).parse({
             ...payload,
             s3Key,
@@ -147,7 +173,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
           });
           const [newImage] = await Promise.all([
             replaceImage(parsed),
-
             putS3Object(s3Key, imageBuffer),
           ]);
           const { s3Key: _, ...image } = newImage;
@@ -158,6 +183,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
               "Content-Type": "application/json",
             },
           });
+        } else {
+          return new Response("Invalid or missing image file", { status: 400 });
         }
       }
       default: {
@@ -168,8 +195,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
       }
     }
   } catch (err: unknown) {
-    console.error(`${relativeUrl}:action\n`, err, "\n");
-
     if (err instanceof z.ZodError) {
       return Response.json(
         { message: "Bad Request", errors: err.flatten().fieldErrors },
@@ -180,6 +205,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
       );
     }
 
+    console.error(`${relativeUrl}:action\n`, err, "\n");
     return new Response("Internal Server Error", {
       status: 500,
     });

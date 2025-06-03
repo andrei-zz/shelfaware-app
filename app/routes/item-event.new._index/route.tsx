@@ -7,14 +7,15 @@ import { getImages, getItems } from "~/actions/select.server";
 
 import { Main } from "~/components/main";
 import { Form } from "~/components/form/form";
+import { Field } from "~/components/form/field";
 import { Label } from "~/components/ui/label";
-import { Input } from "~/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";
-import { Button } from "~/components/ui/button";
 import { ImageField } from "~/components/form/image-field";
 import { PositionFieldset } from "~/components/form/position-fieldset";
 import { ItemField } from "~/components/form/item-field";
 import { ItemEventType } from "~/components/item-event-type";
+import { FieldError } from "~/components/form/field-error";
+import { SubmitButton } from "~/components/form/submit-button";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -73,15 +74,15 @@ const NewItemEventPage = ({ loaderData }: Route.ComponentProps) => {
 
   return (
     <Main>
-      <Form
-        fetcherKey="new-item-event"
-        method="POST"
-        encType="multipart/form-data"
-      >
+      <Form fetcher={fetcher} method="POST" encType="multipart/form-data">
         <div className="flex items-center justify-between">
           <h2 className="mt-0 mb-0">Create Item Event</h2>
         </div>
-        <ItemField items={loaderData.items} required />
+        <ItemField
+          items={loaderData.items}
+          required
+          fieldErrors={fetcher.data?.errors?.itemId}
+        />
         <div className="flex flex-col w-full space-y-2">
           <Label>Event type</Label>
           <RadioGroup
@@ -101,21 +102,31 @@ const NewItemEventPage = ({ loaderData }: Route.ComponentProps) => {
               </div>
             ))}
           </RadioGroup>
+          {Array.isArray(fetcher.data?.errors?.eventType) &&
+          fetcher.data?.errors?.eventType.length > 0 ? (
+            <FieldError>{fetcher.data?.errors?.eventType[0]}</FieldError>
+          ) : null}
         </div>
-        <div className="flex flex-col w-full space-y-2">
-          <Label htmlFor="weight">Current item weight (in grams)</Label>
-          <Input type="number" id="weight" name="weight" className="w-full" />
-        </div>
-        <PositionFieldset />
+        <Field
+          type="number"
+          name="weight"
+          label="Current item weight (in grams)"
+          fieldErrors={fetcher.data?.errors?.weight}
+        />
+        <PositionFieldset
+          plateFieldErrors={fetcher.data?.errors?.plate}
+          rowFieldErrors={fetcher.data?.errors?.row}
+          colFieldErrors={fetcher.data?.errors?.col}
+        />
         <ImageField
           imageFileFieldName="image"
           imageIdFieldName="imageId"
           label="Image"
           images={loaderData.images}
+          imageFileFieldErrors={fetcher.data?.errors?.image}
+          imageIdFieldErrors={fetcher.data?.errors?.imageId}
         />
-        <div className="flex flex-col w-full space-y-2">
-          <Button className="w-fit">Create</Button>
-        </div>
+        <SubmitButton fetcher={fetcher}>Create</SubmitButton>
       </Form>
     </Main>
   );

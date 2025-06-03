@@ -1,17 +1,16 @@
 import type { Route } from "./+types/route";
 
-import { replace, useFetcher } from "react-router";
+import { useFetcher } from "react-router";
 import { DateTime } from "luxon";
 
 import { getItems, getTag } from "~/actions/select.server";
 
 import { Main } from "~/components/main";
 import { Form } from "~/components/form/form";
-import { Label } from "~/components/ui/label";
-import { Input } from "~/components/ui/input";
+import { Field } from "~/components/form/field";
 import { SelectItem } from "~/components/ui/select";
-import { Button } from "~/components/ui/button";
 import { ItemField } from "~/components/form/item-field";
+import { SubmitButton } from "~/components/form/submit-button";
 
 export const meta = ({ params }: Route.MetaArgs) => {
   return [
@@ -83,52 +82,37 @@ const EditTagPage = ({ params, loaderData }: Route.ComponentProps) => {
           Tag not found
         </div>
       ) : (
-        <Form
-          fetcherKey="edit-tag"
-          method="PATCH"
-          encType="multipart/form-data"
-        >
+        <Form fetcher={fetcher} method="PATCH" encType="multipart/form-data">
           <div className="flex items-center justify-between">
             <h2 className="mt-0 mb-0">{`Edit Tag${
               params.tagId ? " #" + params.tagId : ""
             }`}</h2>
           </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="name">ID</Label>
-            <Input
-              type="number"
-              id="id"
-              autoComplete="off"
-              readOnly
-              disabled
-              defaultValue={loaderData.tag?.id}
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              type="text"
-              id="name"
-              name="name"
-              autoComplete="off"
-              required
-              defaultValue={loaderData.tag?.name}
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="uid">UID (in hex)</Label>
-            <Input
-              type="text"
-              id="uid"
-              readOnly
-              disabled
-              placeholder="DE AD BE EF"
-              defaultValue={loaderData.tag?.uid}
-              className="w-full"
-            />
-          </div>
+          <Field
+            type="number"
+            id="id"
+            readOnly
+            disabled
+            label="ID"
+            defaultValue={loaderData.tag?.id}
+            fieldErrors={fetcher.data?.errors?.id}
+          />
+          <Field
+            name="name"
+            required
+            defaultValue={loaderData.tag?.name}
+            label="Name"
+            fieldErrors={fetcher.data?.errors?.name}
+          />
+          <Field
+            id="uid"
+            readOnly
+            disabled
+            placeholder="DE AD BE EF"
+            defaultValue={loaderData.tag?.uid}
+            label="UID (in hex)"
+            fieldErrors={fetcher.data?.errors?.uid}
+          />
           <ItemField
             items={loaderData.items}
             item={loaderData.tag?.item ?? undefined}
@@ -147,44 +131,37 @@ const EditTagPage = ({ params, loaderData }: Route.ComponentProps) => {
             )}
             labelProps={{ children: "Attached item" }}
             selectValueProps={{ placeholder: "Unattached" }}
+            fieldErrors={fetcher.data?.errors?.itemId}
           />
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="createdAt">Creation date</Label>
-            <Input
-              type="date"
-              id="createdAt"
-              readOnly
-              disabled
-              defaultValue={
-                loaderData.tag?.createdAt != null
-                  ? DateTime.fromMillis(
-                      loaderData.tag?.createdAt
-                    ).toISODate() ?? undefined
-                  : undefined
-              }
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Label htmlFor="attachedAt">Attached date</Label>
-            <Input
-              type="date"
-              id="attachedAt"
-              readOnly
-              disabled
-              defaultValue={
-                loaderData.tag?.attachedAt != null
-                  ? DateTime.fromMillis(
-                      loaderData.tag?.attachedAt
-                    ).toISODate() ?? undefined
-                  : undefined
-              }
-              className="w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full space-y-2">
-            <Button className="w-fit">Edit</Button>
-          </div>
+          <Field
+            type="date"
+            id="createdAt"
+            readOnly
+            disabled
+            defaultValue={
+              loaderData.tag?.createdAt != null
+                ? DateTime.fromMillis(loaderData.tag?.createdAt).toISODate() ??
+                  undefined
+                : undefined
+            }
+            label="Tag creation date"
+            fieldErrors={fetcher.data?.errors?.createdAt}
+          />
+          <Field
+            type="date"
+            id="attachedAt"
+            readOnly
+            disabled
+            defaultValue={
+              loaderData.tag?.attachedAt != null
+                ? DateTime.fromMillis(loaderData.tag?.attachedAt).toISODate() ??
+                  undefined
+                : undefined
+            }
+            label="Attached date"
+            fieldErrors={fetcher.data?.errors?.attachedAt}
+          />
+          <SubmitButton fetcher={fetcher}>Edit</SubmitButton>
         </Form>
       )}
     </Main>
