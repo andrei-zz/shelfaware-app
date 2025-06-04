@@ -19,6 +19,7 @@ import {
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarHeader,
   SidebarMenu,
@@ -31,6 +32,7 @@ import {
   useSidebar,
 } from "~/components/ui/sidebar";
 import { SidebarLink } from "./sidebar-link";
+import { ThemeToggle } from "../theme-toggle";
 
 const sidebarItems: {
   title: string;
@@ -221,6 +223,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <ThemeToggle />
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );

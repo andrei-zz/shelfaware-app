@@ -31,11 +31,11 @@ const ItemsPage = ({ loaderData }: Route.ComponentProps) => {
             <h2 className="mt-0 mb-0">Your Fridge</h2>
           </div>
         </div>
-        {loaderData.items.length === 0
-          ? "Empty"
-          : loaderData.items.map((item) => (
+        {Array.isArray(loaderData.items) && loaderData.items.length > 0
+          ? loaderData.items.map((item) => (
               <FridgeItem key={item.id} item={item} />
-            ))}
+            ))
+          : "Empty"}
       </div>
     </Main>
   );

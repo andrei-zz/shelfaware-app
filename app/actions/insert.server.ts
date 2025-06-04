@@ -1,6 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { db } from "~/database/db.server";
 import {
@@ -22,7 +22,7 @@ export const createItemSchema = createInsertSchema(items).omit({
 });
 export const createItem = async (
   // Exclude the id and timestamps
-  data: z.infer<typeof createItemSchema>,
+  data: z.output<typeof createItemSchema>,
   tx?: typeof db | DrizzleTx
 ) => {
   const database = tx ?? db;

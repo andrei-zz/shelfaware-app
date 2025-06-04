@@ -3,16 +3,12 @@ import {
   ZodBoolean,
   ZodDate,
   ZodDefault,
-  ZodEffects,
   ZodNullable,
   ZodNumber,
   ZodOptional,
   ZodString,
-  type ZodSchema,
-  type ZodObject,
-  type ZodRawShape,
-  ZodError,
-} from "zod";
+} from "zod/v4";
+import type { $ZodObject, $ZodType } from "zod/v4/core";
 
 export const coerceString = (val: unknown): string | null | undefined => {
   if (val === "" || val === null) {
@@ -77,9 +73,9 @@ export const coerceTimestamp = (val: unknown): number | null | undefined => {
  * Given a ZodObject schema, returns a `z.object(...)` where every key is
  * `z.unknown().optional()` and the whole thing is strict.
  */
-const makeRawSchema = <S extends ZodObject<ZodRawShape>>(schema: S) => {
-  const shape = (schema as any)._def.shape() as ZodRawShape;
-  const rawShape: ZodRawShape = {};
+const makeRawSchema = <T extends $ZodObject>(schema: T) => {
+  const shape = schema._zod.def.shape;
+  const rawShape: Record<string, $ZodType> = {};
 
   for (const key of Object.keys(shape)) {
     rawShape[key] = z.unknown().optional();
@@ -88,8 +84,8 @@ const makeRawSchema = <S extends ZodObject<ZodRawShape>>(schema: S) => {
   return z.object(rawShape).strict();
 };
 
-const makeTransformFn = <S extends ZodObject<ZodRawShape>>(schema: S) => {
-  const shape = schema._def.shape();
+const makeTransformFn = <T extends $ZodObject>(schema: T) => {
+  const shape = schema._zod.def.shape;
 
   return (raw: unknown) => {
     const obj = raw as Record<string, unknown>;
@@ -102,10 +98,9 @@ const makeTransformFn = <S extends ZodObject<ZodRawShape>>(schema: S) => {
       while (
         fieldSchema instanceof ZodOptional ||
         fieldSchema instanceof ZodNullable ||
-        fieldSchema instanceof ZodDefault ||
-        fieldSchema instanceof ZodEffects
+        fieldSchema instanceof ZodDefault
       ) {
-        fieldSchema = (fieldSchema as any)._def.innerType;
+        fieldSchema = fieldSchema.unwrap();
       }
 
       if (fieldSchema instanceof ZodNumber) {
@@ -126,8 +121,11 @@ const makeTransformFn = <S extends ZodObject<ZodRawShape>>(schema: S) => {
 };
 
 // The returned type is a ZodEffects that ultimately yields the same shape as `schema`
-export const makeApiSchema = <S extends ZodObject<ZodRawShape>>(schema: S) =>
-  makeRawSchema(schema).transform(makeTransformFn(schema)).pipe(schema);
+export const makeApiSchema = <T extends $ZodObject>(schema: T) => {
+  const rawStrict = makeRawSchema(schema);
+  const coerced = rawStrict.transform(makeTransformFn(schema));
+  return coerced.pipe(schema as any);
+};
 
 const isRecord = (x: unknown): x is Record<string, unknown> =>
   typeof x === "object" && x !== null;
@@ -136,11 +134,11 @@ const isRecord = (x: unknown): x is Record<string, unknown> =>
  * Core payload parser: given an unknown raw object and a list of
  * { schema, dummy } candidates, try each one in turn.
  */
-const parsePayload = <T>(
+const parsePayload = <T extends $ZodObject>(
   raw: unknown,
-  schema: ZodSchema<T>,
-  dummy?: Partial<T>
-): T => {
+  schema: T,
+  dummy?: Partial<z.input<T>>
+): z.output<T> => {
   if (!isRecord(raw)) {
     throw new Error("Payload must be an object");
   }
@@ -157,7 +155,7 @@ const parsePayload = <T>(
   }
 
   // just parse
-  const parsed = schema.parse(merged);
+  const parsed = z.parse(schema, merged);
 
   // strip back out any dummy fields we injected
   if (dummy) {
@@ -175,11 +173,11 @@ const parsePayload = <T>(
  * For multipart/form-data requests: pull out the File entries,
  * build a plain object of the other fields, then parse.
  */
-export const parseFormPayload = <T>(
+export const parseFormPayload = <T extends $ZodObject>(
   form: Record<string, unknown>,
-  schema: ZodSchema<T>,
-  dummy?: Partial<T>
-): T => {
+  schema: T,
+  dummy?: Partial<z.input<T>>
+): z.output<T> => {
   const rawObj: Record<string, unknown> = {};
   for (const [key, val] of Object.entries(form)) {
     if (val instanceof File) continue;
@@ -191,8 +189,8 @@ export const parseFormPayload = <T>(
 /**
  * For JSON requests: just pass through to parsePayload.
  */
-export const parseJsonPayload = <T>(
+export const parseJsonPayload = <T extends $ZodObject>(
   jsonData: unknown,
-  schema: ZodSchema<T>,
-  dummy?: Partial<T>
-): T => parsePayload(jsonData, schema, dummy);
+  schema: T,
+  dummy?: Partial<z.input<T>>
+): z.output<T> => parsePayload(jsonData, schema, dummy);

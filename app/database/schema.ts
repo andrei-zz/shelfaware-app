@@ -15,23 +15,23 @@ import {
   uuid,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 // Types
 
 const unixTimestamp = customType<{
-  data: number | null;
-  driverData: Date | null;
+  data: number;
+  driverData: Date;
   columnType: "timestamp";
 }>({
   dataType() {
     return "timestamp";
   },
   fromDriver(value) {
-    return typeof value === "string" ? new Date(value).getTime() : null;
+    return new Date(value ?? "").getTime();
   },
   toDriver(value) {
-    return typeof value === "number" ? new Date(value) : null;
+    return new Date(value ?? "");
   },
 });
 

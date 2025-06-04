@@ -1,6 +1,6 @@
 import type { Route } from "./+types/route";
 
-import { ZodError } from "zod";
+import { ZodError } from "zod/v4";
 
 import {
   createItem,

@@ -35,7 +35,7 @@ type ItemDropdown = {
   >;
 };
 
-interface CtxMenuOwnProps {
+type CtxMenuOwnProps = {
   features?: (
     | "right-click"
     | "long-press"
@@ -63,24 +63,22 @@ interface CtxMenuOwnProps {
   tooltipProps?: React.ComponentProps<typeof Tooltip>;
   tooltipTriggerProps?: React.ComponentProps<typeof TooltipTrigger>;
   tooltipContentProps?: React.ComponentProps<typeof TooltipContent>;
-}
-interface CtxMenuBaseProps extends CtxMenuOwnProps {
+};
+
+type CtxMenuBaseProps = CtxMenuOwnProps & {
   asChild?: boolean;
   children?: React.ReactNode;
-}
+};
 
 export type CtxMenuProps =
   | (CtxMenuBaseProps &
-      Omit<
-        React.ButtonHTMLAttributes<HTMLButtonElement>,
-        keyof CtxMenuOwnProps
-      >)
+      Omit<React.ComponentProps<"button">, keyof CtxMenuOwnProps>)
   | (CtxMenuBaseProps & { asChild: true } & Omit<
-        React.ComponentPropsWithoutRef<typeof Slot>,
+        React.ComponentProps<typeof Slot>,
         keyof CtxMenuOwnProps | "children"
       >);
 
-function CtxMenuWrapper(
+const CtxMenuWrapper = (
   {
     asChild,
     children,
@@ -98,9 +96,8 @@ function CtxMenuWrapper(
     tooltipContentProps,
     ...props
   }: CtxMenuProps,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ref: React.Ref<any> // React.Ref<HTMLButtonElement | React.ElementRef<typeof Slot>>
-) {
+  ref: React.Ref<HTMLButtonElement> | React.Ref<React.ElementRef<typeof Slot>>
+) => {
   const Comp = asChild ? Slot : "button";
 
   const [isTooltipOpen, setIsTooltipOpen] = useState<boolean>(false);
@@ -168,7 +165,8 @@ function CtxMenuWrapper(
             >
               <TooltipTrigger asChild {...tooltipTriggerProps}>
                 <Comp
-                  ref={ref}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  ref={ref as any}
                   {...props}
                   {...mergedProps}
                   className={cn("", props.className)}
@@ -213,7 +211,7 @@ function CtxMenuWrapper(
       </Tooltip>
     </ContextMenu>
   );
-}
-CtxMenuWrapper.displayName = "CtxMenuWrapper";
+};
+CtxMenuWrapper.displayName = "CtxMenu";
 
 export const CtxMenu = forwardRef(CtxMenuWrapper);

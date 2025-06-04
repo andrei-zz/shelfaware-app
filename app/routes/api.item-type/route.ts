@@ -1,6 +1,6 @@
 import type { Route } from "./+types/route";
 
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { createItemType, createItemTypeSchema } from "~/actions/insert.server";
 import { getItemType, getItemTypeByName } from "~/actions/select.server";

@@ -1,6 +1,6 @@
 import { type SQL, type SQLWrapper, and, eq, sql } from "drizzle-orm";
 import { createUpdateSchema } from "drizzle-zod";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { db } from "~/database/db.server";
 import {

@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import type { z } from "zod/v4";
 
 import type { createItemEventSchema } from "~/actions/insert.server";
 
@@ -17,11 +17,11 @@ export const ItemEventType = ({
     className={cn(
       "w-9 text-white border-border",
       type === "in"
-        ? "bg-green-600"
+        ? "bg-green-600 dark:bg-green-800"
         : type === "out"
-        ? "bg-red-600"
+        ? "bg-red-600 dark:bg-red-800"
         : type === "moved"
-        ? "bg-yellow-600"
+        ? "bg-yellow-600 dark:bg-yellow-800"
         : undefined,
       props.className
     )}

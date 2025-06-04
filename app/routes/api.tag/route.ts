@@ -1,6 +1,6 @@
 import type { Route } from "./+types/route";
 
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { createTag, createTagSchema } from "~/actions/insert.server";
 import { getTag, getTagByItemId, getTagByUid } from "~/actions/select.server";

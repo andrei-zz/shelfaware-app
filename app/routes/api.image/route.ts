@@ -1,7 +1,7 @@
 import type { Route } from "./+types/route";
 
 import { redirect } from "react-router";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 import { createImage, createImageSchema } from "~/actions/insert.server";
 import { getImageWithS3Key } from "~/actions/select.server";

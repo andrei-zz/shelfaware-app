@@ -7,6 +7,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "react-router";
 
 import "./app.css";
@@ -17,6 +18,13 @@ import { SidebarInsetHeader } from "~/components/sidebar/sidebar-inset-header";
 import { Main } from "./components/main";
 import { Pre } from "./components/pre";
 import { Code } from "./components/code";
+import { themeSessionResolver } from "./sessions.server";
+import {
+  ThemeProvider,
+  PreventFlashOnWrongTheme,
+  useTheme,
+} from "remix-themes";
+import { cn } from "./lib/utils";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -31,61 +39,83 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
-// export const loader = async ({ request }: Route.LoaderArgs) => {
-//   return {};
-// };
+export const loader = async ({ request }: Route.LoaderArgs) => {
+  const { getTheme } = await themeSessionResolver(request);
+  return {
+    theme: getTheme(),
+  };
+};
 
-const AppLayout = ({ children }: { children: React.ReactNode }) => (
-  <html
-    lang="en"
-    className="scrollbar-thumb-rounded-full scrollbar-thumb-neutral-700 scrollbar-track-neutral-200 scrollbar-hover:scrollbar-thumb-neutral-700/80 scrollbar-active:scrollbar-thumb-neutral-700/70"
-  >
-    <head>
-      <meta charSet="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <Meta />
-      <Links />
-    </head>
-    <body className="overflow-hidden">
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <SidebarInsetHeader />
-          {children}
-        </SidebarInset>
-        <ScrollRestoration />
-        <Scripts />
-      </SidebarProvider>
-    </body>
-  </html>
-);
-
-const App = () => {
-  // const loaderData = useLoaderData<typeof loader>();
+const AppLayout = ({ children }: { children: React.ReactNode }) => {
+  const loaderData: Route.ComponentProps["loaderData"] = useLoaderData();
+  const [theme] = useTheme();
 
   return (
-    <AppLayout>
-      <Outlet />
-    </AppLayout>
+    <html
+      lang="en"
+      data-theme={theme ?? ""}
+      className={cn(
+        "scrollbar-thumb-rounded-full scrollbar-thumb-neutral-700 scrollbar-track-neutral-200 scrollbar-hover:scrollbar-thumb-neutral-700/80 scrollbar-active:scrollbar-thumb-neutral-700/70",
+        theme
+      )}
+    >
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <Meta />
+        <PreventFlashOnWrongTheme ssrTheme={Boolean(loaderData?.theme)} />
+        <Links />
+      </head>
+      <body className="overflow-hidden antialiased bg-background text-foreground">
+        <SidebarProvider>
+          <AppSidebar />
+          <SidebarInset>
+            <SidebarInsetHeader />
+            {children}
+          </SidebarInset>
+          <ScrollRestoration />
+          <Scripts />
+        </SidebarProvider>
+      </body>
+    </html>
   );
 };
 
-const AppWithProviders = ({ loaderData }: Route.ComponentProps) => {
+const Providers = ({ children }: { children: React.ReactNode }) => {
+  const loaderData: Route.ComponentProps["loaderData"] = useLoaderData();
+
   return (
-    <TooltipProvider delayDuration={400} skipDelayDuration={300}>
-      <App />
-    </TooltipProvider>
+    <ThemeProvider
+      specifiedTheme={loaderData?.theme}
+      themeAction="/action/set-theme"
+    >
+      <TooltipProvider delayDuration={400} skipDelayDuration={300}>
+        {children}
+      </TooltipProvider>
+    </ThemeProvider>
   );
 };
-export default AppWithProviders;
+
+const App = ({}: Route.ComponentProps) => {
+  return (
+    <Providers>
+      <AppLayout>
+        <Outlet />
+      </AppLayout>
+    </Providers>
+  );
+};
+export default App;
 
 export const HydrateFallback = ({}: Route.HydrateFallbackProps) => {
   return (
-    <AppLayout>
-      <Main>
-        <div className="text-9xl font-black">LOADING...</div>
-      </Main>
-    </AppLayout>
+    <Providers>
+      <AppLayout>
+        <Main>
+          <div className="text-9xl font-black">LOADING...</div>
+        </Main>
+      </AppLayout>
+    </Providers>
   );
 };
 
@@ -106,16 +136,18 @@ export const ErrorBoundary = ({ error }: Route.ErrorBoundaryProps) => {
   }
 
   return (
-    <AppLayout>
-      <Main className="p-4 pb-16 flex flex-col gap-y-4">
-        {message && <h4 className="mb-0">{message}</h4>}
-        {details && <p className="mb-0">{details}</p>}
-        {stack && (
-          <Pre className="mt-0">
-            <Code className="mb-2">{stack}</Code>
-          </Pre>
-        )}
-      </Main>
-    </AppLayout>
+    <Providers>
+      <AppLayout>
+        <Main className="p-4 pb-16 flex flex-col gap-y-4">
+          {message && <h4 className="mb-0">{message}</h4>}
+          {details && <p className="mb-0">{details}</p>}
+          {stack && (
+            <Pre className="mt-0">
+              <Code className="mb-2">{stack}</Code>
+            </Pre>
+          )}
+        </Main>
+      </AppLayout>
+    </Providers>
   );
 };
