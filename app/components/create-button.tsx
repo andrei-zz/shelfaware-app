@@ -10,7 +10,7 @@ export const CreateButton = () => {
   return (
     <CtxMenu
       asChild
-      features={["click"]}
+      features={["click", "checkbox"]}
       dropdownMenuValue={location.pathname}
       dropdownItems={[
         {

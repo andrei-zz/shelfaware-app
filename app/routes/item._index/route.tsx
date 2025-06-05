@@ -1,5 +1,7 @@
 import type { Route } from "./+types/route";
 
+import { loaderSchema } from "./zod-schema";
+
 import { getItems } from "~/actions/select.server";
 import { FridgeItem } from "~/components/fridge-item";
 import { Main } from "~/components/main";
@@ -17,7 +19,10 @@ export const meta = ({}: Route.MetaArgs) => {
 //   };
 // }
 
-export const loader = async ({}: Route.LoaderArgs) => {
+export const loader = async ({ request }: Route.LoaderArgs) => {
+  const url = new URL(request.url);
+  const raw: unknown = Object.fromEntries(url.searchParams);
+
   const items = await getItems();
   return { items };
 };

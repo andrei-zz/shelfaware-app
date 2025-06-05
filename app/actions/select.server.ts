@@ -93,13 +93,16 @@ export const getItemWithEvents = async (
   });
 
 export const getItems = async (
+  rootOp: (
+    ...conditions: (SQLWrapper | undefined)[]
+  ) => SQL | undefined = and,
   conditions?: SQLWrapper[],
   orderBy: SQL = desc(items.updatedAt)
 ) =>
   await db.query.items.findMany({
     where:
       conditions != null && conditions.length > 0
-        ? and(...conditions)
+        ? rootOp(...conditions)
         : undefined,
     with: {
       type: true,
@@ -127,7 +130,7 @@ export const getRawItems = async (
 
 // List of currently present items, sorted by updatedAt (ascending)
 export const getPresentItems = async () =>
-  await getItems([eq(items.isPresent, true)], desc(items.updatedAt));
+  await getItems(and, [eq(items.isPresent, true)], desc(items.updatedAt));
 
 // List of items at a specific time
 // Quite expensive to run
@@ -163,6 +166,7 @@ export const getPresentItemsAtTime = async (timestamp: number) => {
     .map(([itemId]) => itemId);
 
   const itemsAtTime = await getItems(
+    and,
     [inArray(items.id, presentItemIds)],
     desc(items.updatedAt)
   );

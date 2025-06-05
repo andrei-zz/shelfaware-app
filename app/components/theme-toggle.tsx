@@ -1,9 +1,17 @@
-import { Monitor, Moon, Sun } from "lucide-react";
 import { Theme, useTheme } from "remix-themes";
+import { Monitor, Moon, Sun } from "lucide-react";
+
+import { cn } from "~/lib/utils";
 import { CtxMenu } from "./ctx-menu";
 import { Button } from "./ui/button";
 
-export function ThemeToggle() {
+export const ThemeToggle = ({
+  children,
+  ctxMenuProps,
+  ...props
+}: React.ComponentProps<typeof Button> & {
+  ctxMenuProps?: React.ComponentProps<typeof CtxMenu>;
+}) => {
   const [theme, setTheme, metadata] = useTheme();
 
   const dropdownItemClassName =
@@ -12,9 +20,14 @@ export function ThemeToggle() {
   return (
     <CtxMenu
       asChild
-      features={["right-click", "long-press", "shift-enter", "tooltip"]}
+      features={[
+        "right-click",
+        "long-press",
+        "shift-enter",
+        "tooltip",
+        "checkbox",
+      ]}
       onPress={() => setTheme(theme === Theme.DARK ? Theme.LIGHT : Theme.DARK)}
-      tooltipContentProps={{ children: "Toggle theme" }}
       dropdownItems={[
         {
           key: Theme.DARK,
@@ -56,9 +69,6 @@ export function ThemeToggle() {
           },
         },
       ]}
-      dropdownMenuContentProps={{
-        collisionPadding: 8,
-      }}
       dropdownMenuValue={
         metadata.definedBy === "SYSTEM"
           ? "system"
@@ -66,15 +76,29 @@ export function ThemeToggle() {
           ? "light"
           : "dark"
       }
+      tooltipContentProps={{ children: "Toggle theme" }}
+      {...ctxMenuProps}
+      dropdownMenuContentProps={{
+        collisionPadding: 8,
+        ...ctxMenuProps?.dropdownMenuContentProps,
+      }}
     >
       <Button
         variant="outline"
         size="icon"
-        className="min-w-9 h-9 pressed:bg-accent dark:pressed:bg-accent/40"
+        {...props}
+        className={cn(
+          "min-w-9 h-9 pressed:bg-accent dark:pressed:bg-accent/40",
+          props.className
+        )}
       >
-        <Sun className="h-[1.25rem] w-[1.25rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-        <Moon className="absolute h-[1.25rem] w-[1.25rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+        {children ?? (
+          <>
+            <Sun className="h-[1.25rem] w-[1.25rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-[1.25rem] w-[1.25rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          </>
+        )}
       </Button>
     </CtxMenu>
   );
-}
+};

@@ -14,6 +14,7 @@ import {
   DropdownMenuArrow,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { ContextMenu, ContextMenuTrigger } from "~/components/ui/context-menu";
@@ -42,6 +43,7 @@ type CtxMenuOwnProps = {
     | "shift-enter"
     | "click"
     | "tooltip"
+    | "checkbox"
   )[];
   onPress?: (e: PressEvent) => void; // use this instead of onClick for correct behavior
   longPressDescription?: string;
@@ -54,6 +56,10 @@ type CtxMenuOwnProps = {
   >;
   dropdownMenuContentProps?: Omit<
     React.ComponentProps<typeof DropdownMenuContent>,
+    "children"
+  >;
+  dropdownMenuItemProps?: Omit<
+    React.ComponentProps<typeof DropdownMenuItem>,
     "children"
   >;
   dropdownMenuCheckboxItemProps?: Omit<
@@ -90,6 +96,7 @@ const CtxMenuWrapper = (
     dropdownMenuValue,
     dropdownMenuProps,
     dropdownMenuContentProps,
+    dropdownMenuItemProps,
     dropdownMenuCheckboxItemProps,
     tooltipProps,
     tooltipTriggerProps,
@@ -112,7 +119,11 @@ const CtxMenuWrapper = (
       ) {
         setIsDropdownMenuOpen(true);
       } else {
-        if (onPress && !features?.includes("click")) {
+        if (
+          onPress &&
+          !features?.includes("click") &&
+          (!features?.includes("shift-enter") || !e.shiftKey)
+        ) {
           onPress(e);
         }
       }
@@ -176,28 +187,41 @@ const CtxMenuWrapper = (
               </TooltipTrigger>
             </ContextMenuTrigger>
           </DropdownMenuTrigger>
-          {ctxMenuContent ?? !dropdownItems ? null : (
+          {!ctxMenuContent && !dropdownItems ? null : (
             <DropdownMenuContent
               collisionPadding={16}
               {...dropdownMenuContentProps}
             >
-              {dropdownItems.map((item: ItemDropdown, i) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={item.key ?? i}
-                    checked={
-                      typeof dropdownMenuValue === "string" &&
-                      item.key === dropdownMenuValue
-                    }
-                    onSelect={item.onSelect}
-                    {...dropdownMenuCheckboxItemProps}
-                    {...item.props}
-                  >
-                    {item.label ?? item.props?.children}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-              <DropdownMenuArrow className="fill-border" />
+              {ctxMenuContent ?? (
+                <>
+                  {dropdownItems?.map((item: ItemDropdown, i) => {
+                    return features?.includes("checkbox") ? (
+                      <DropdownMenuCheckboxItem
+                        key={item.key ?? i}
+                        checked={
+                          typeof dropdownMenuValue === "string" &&
+                          item.key === dropdownMenuValue
+                        }
+                        onSelect={item.onSelect}
+                        {...dropdownMenuCheckboxItemProps}
+                        {...item.props}
+                      >
+                        {item.label ?? item.props?.children}
+                      </DropdownMenuCheckboxItem>
+                    ) : (
+                      <DropdownMenuItem
+                        key={item.key ?? i}
+                        onSelect={item.onSelect}
+                        {...dropdownMenuItemProps}
+                        {...item.props}
+                      >
+                        {item.label ?? item.props?.children}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                  <DropdownMenuArrow className="fill-border" />
+                </>
+              )}
             </DropdownMenuContent>
           )}
           {tooltipContentProps ? (

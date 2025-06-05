@@ -5,7 +5,10 @@ import {
   ChevronRight,
   FlagTriangleRight,
   Image,
+  Menu,
+  Moon,
   ScrollText,
+  Sun,
   Tag,
   type LucideProps,
 } from "lucide-react";
@@ -32,7 +35,18 @@ import {
   useSidebar,
 } from "~/components/ui/sidebar";
 import { SidebarLink } from "./sidebar-link";
+import { CtxMenu } from "../ctx-menu";
 import { ThemeToggle } from "../theme-toggle";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
+import { DropdownMenuItem } from "../ui/dropdown-menu";
 
 const sidebarItems: {
   title: string;
@@ -138,22 +152,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={() => navigate("/")}
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            >
-              <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                SA
-              </div>
-              <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-medium">ShelfAware</span>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <SidebarMenuButton
+          onClick={() => navigate("/")}
+          size="lg"
+          className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+        >
+          <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+            SA
+          </div>
+          <div className="flex flex-col gap-0.5 leading-none">
+            <span className="font-medium">ShelfAware</span>
+          </div>
+        </SidebarMenuButton>
       </SidebarHeader>
       <SidebarContent className="gap-0">
         {/* We create a collapsible SidebarGroup for each parent. */}
@@ -224,7 +234,67 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <ThemeToggle />
+        <CtxMenu
+          features={["click", "tooltip"]}
+          dropdownMenuContentProps={{
+            asChild: true,
+            side: isMobile ? "top" : "right",
+            collisionPadding: 8,
+            sideOffset: 16,
+          }}
+          ctxMenuContent={
+            <Card className="min-w-3xs py-2 gap-2 ">
+              <CardHeader className="px-2 items-center">
+                <CardTitle className="text-xl">Menu</CardTitle>
+                <CardAction className="row-span-1">
+                  <ThemeToggle
+                    ctxMenuProps={{
+                      features: [
+                        "right-click",
+                        "long-press",
+                        "tooltip",
+                        "checkbox",
+                      ],
+                    }}
+                    className="bg-transparent"
+                  />
+                </CardAction>
+              </CardHeader>
+              <CardContent className="px-1">
+                <DropdownMenuItem onSelect={() => {}} className="w-full">
+                  Accounts
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => {}} className="w-full">
+                  Accounts
+                </DropdownMenuItem>
+              </CardContent>
+              <CardFooter className="px-1">
+                <DropdownMenuItem onSelect={() => {}} className="w-full">
+                  Logout
+                </DropdownMenuItem>
+              </CardFooter>
+            </Card>
+          }
+          tooltipContentProps={{
+            side: "right",
+            children: "Open menu",
+          }}
+        >
+          <SidebarMenuButton
+            size="lg"
+            className="justify-between data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+          >
+            <div className="flex w-full items-center gap-2">
+              <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                US
+              </div>
+              <div className="flex flex-col gap-0.5 leading-none">
+                <span className="font-medium">User Name</span>
+              </div>
+            </div>
+            <Menu />
+          </SidebarMenuButton>
+        </CtxMenu>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

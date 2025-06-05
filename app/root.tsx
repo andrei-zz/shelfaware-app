@@ -87,7 +87,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
   return (
     <ThemeProvider
       specifiedTheme={loaderData?.theme}
-      themeAction="/action/set-theme"
+      themeAction="/api/set-theme"
     >
       <TooltipProvider delayDuration={400} skipDelayDuration={300}>
         {children}
