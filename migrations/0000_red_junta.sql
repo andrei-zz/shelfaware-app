@@ -1,8 +1,10 @@
 CREATE TYPE "public"."event_type" AS ENUM('in', 'out', 'moved', 'image');--> statement-breakpoint
+CREATE TYPE "public"."image_type" AS ENUM('item', 'item_event', 'avatar');--> statement-breakpoint
 CREATE TABLE "api_keys" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" uuid,
 	"key_hash" text NOT NULL,
+	"name" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"revoked_at" timestamp,
 	"expire_at" timestamp
@@ -11,6 +13,7 @@ CREATE TABLE "api_keys" (
 CREATE TABLE "images" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"s3_key" uuid NOT NULL,
+	"type" "image_type" NOT NULL,
 	"title" text,
 	"description" text,
 	"mime_type" text NOT NULL,
@@ -77,7 +80,7 @@ CREATE TABLE "users" (
 	"email" text NOT NULL,
 	"password_hash" text NOT NULL,
 	"name" text NOT NULL,
-	"avatar" uuid,
+	"avatar_image_id" integer,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	"deleted_at" timestamp,
@@ -91,6 +94,7 @@ ALTER TABLE "item_events" ADD CONSTRAINT "item_events_image_id_images_id_fk" FOR
 ALTER TABLE "items" ADD CONSTRAINT "items_item_type_id_item_types_id_fk" FOREIGN KEY ("item_type_id") REFERENCES "public"."item_types"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "items" ADD CONSTRAINT "items_image_id_images_id_fk" FOREIGN KEY ("image_id") REFERENCES "public"."images"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "tags" ADD CONSTRAINT "tags_item_id_items_id_fk" FOREIGN KEY ("item_id") REFERENCES "public"."items"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "users" ADD CONSTRAINT "users_avatar_image_id_images_id_fk" FOREIGN KEY ("avatar_image_id") REFERENCES "public"."images"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "idx_images_replaced_by_id" ON "images" USING btree ("replaced_by_id");--> statement-breakpoint
 CREATE INDEX "idx_item_events_item_id" ON "item_events" USING btree ("item_id");--> statement-breakpoint
 CREATE INDEX "idx_item_events_timestamp" ON "item_events" USING btree ("timestamp");--> statement-breakpoint
