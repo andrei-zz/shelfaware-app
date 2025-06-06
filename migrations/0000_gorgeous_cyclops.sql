@@ -17,7 +17,7 @@ CREATE TABLE "item_events" (
 	"event_type" "event_type" NOT NULL,
 	"timestamp" timestamp DEFAULT now() NOT NULL,
 	"weight" real,
-	"floor" integer,
+	"plate" integer,
 	"row" integer,
 	"col" integer,
 	"image_id" integer
@@ -42,7 +42,7 @@ CREATE TABLE "items" (
 	"current_weight" real,
 	"image_id" integer,
 	"is_present" boolean DEFAULT true,
-	"floor" integer,
+	"plate" integer,
 	"row" integer,
 	"col" integer,
 	"created_at" timestamp DEFAULT now() NOT NULL,

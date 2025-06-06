@@ -4,14 +4,11 @@ import { z } from "zod/v4";
 
 import { uidSchema } from "~/database/schema";
 import {
-  createImage,
-  createImageSchema,
   createItemAndTagByUid,
   createItemEvent,
   createItemEventSchema,
 } from "~/actions/insert.server";
 import { getItemByUid, getItemEvent } from "~/actions/select.server";
-import { putS3Object } from "~/actions/s3.server";
 import {
   makeApiSchema,
   parseFormPayload,

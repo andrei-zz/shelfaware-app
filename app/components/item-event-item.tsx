@@ -7,6 +7,7 @@ import { cn } from "~/lib/utils";
 import { CtxMenu } from "~/components/ctx-menu";
 import { ItemEventType } from "~/components/item-event-type";
 import { Image } from "~/components/image";
+import { DateTime } from "luxon";
 
 export const ItemEventItem = ({
   itemEvent,
@@ -82,6 +83,13 @@ export const ItemEventItem = ({
               Weight: {itemEvent.weight} g
             </span>
           )}
+          <span className="text-sm font-light">
+            {DateTime.fromMillis(itemEvent.timestamp).toLocaleString({
+              ...DateTime.DATETIME_SHORT,
+              weekday: "short",
+              second: "2-digit",
+            })}
+          </span>
         </div>
         {itemEvent.item.tag == null ? null : (
           <div className="flex flex-col shrink-0 items-end">

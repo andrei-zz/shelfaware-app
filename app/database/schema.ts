@@ -15,20 +15,25 @@ import {
   uuid,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
+import { DateTime } from "luxon";
 import { z } from "zod/v4";
 
 // Types
 
 const unixTimestamp = customType<{
   data: number;
-  driverData: Date;
+  driverData: Date | string;
   columnType: "timestamp";
 }>({
   dataType() {
     return "timestamp";
   },
   fromDriver(value) {
-    return new Date(value ?? "").getTime();
+    if (typeof value === "string") {
+      return DateTime.fromSQL(value, { zone: "utc" }).toMillis();
+    } else {
+      return value?.getTime();
+    }
   },
   toDriver(value) {
     return new Date(value ?? "");
@@ -49,7 +54,7 @@ export const uidSchema = z.string().regex(/^[0-9a-f]+$/, {
   message: "UID must be lowercase hex (0-9, a-f only)",
 });
 
-// Tables
+// Tables and relations
 
 export const items = pgTable(
   "items",
@@ -87,6 +92,19 @@ export const items = pgTable(
   ]
 );
 
+export const itemsRelations = relations(items, ({ one, many }) => ({
+  type: one(itemTypes, {
+    fields: [items.itemTypeId],
+    references: [itemTypes.id],
+  }),
+  events: many(itemEvents),
+  tag: one(tags),
+  image: one(images, {
+    fields: [items.imageId],
+    references: [images.id],
+  }),
+}));
+
 export const itemTypes = pgTable("item_types", {
   id: serial("id").primaryKey(),
   name: text("name").unique().notNull(),
@@ -98,6 +116,10 @@ export const itemTypes = pgTable("item_types", {
     .notNull()
     .default(sql`now()`),
 });
+
+export const itemTypesRelations = relations(itemTypes, ({ many }) => ({
+  items: many(items),
+}));
 
 export const eventTypeEnum = pgEnum("event_type", ["in", "out", "moved"]);
 
@@ -130,6 +152,17 @@ export const itemEvents = pgTable(
   ]
 );
 
+export const itemEventsRelations = relations(itemEvents, ({ one }) => ({
+  item: one(items, {
+    fields: [itemEvents.itemId],
+    references: [items.id],
+  }),
+  image: one(images, {
+    fields: [itemEvents.imageId],
+    references: [images.id],
+  }),
+}));
+
 export const tags = pgTable(
   "tags",
   {
@@ -155,6 +188,13 @@ export const tags = pgTable(
   ]
 );
 
+export const tagsRelations = relations(tags, ({ one }) => ({
+  item: one(items, {
+    fields: [tags.itemId],
+    references: [items.id],
+  }),
+}));
+
 export const images = pgTable(
   "images",
   {
@@ -176,43 +216,6 @@ export const images = pgTable(
   },
   (table) => [index("idx_images_replaced_by_id").on(table.replacedById)]
 );
-
-// Relations
-
-export const itemsRelations = relations(items, ({ one, many }) => ({
-  type: one(itemTypes, {
-    fields: [items.itemTypeId],
-    references: [itemTypes.id],
-  }),
-  events: many(itemEvents),
-  tag: one(tags),
-  image: one(images, {
-    fields: [items.imageId],
-    references: [images.id],
-  }),
-}));
-
-export const itemTypesRelations = relations(itemTypes, ({ many }) => ({
-  items: many(items),
-}));
-
-export const itemEventsRelations = relations(itemEvents, ({ one }) => ({
-  item: one(items, {
-    fields: [itemEvents.itemId],
-    references: [items.id],
-  }),
-  image: one(images, {
-    fields: [itemEvents.imageId],
-    references: [images.id],
-  }),
-}));
-
-export const tagsRelations = relations(tags, ({ one }) => ({
-  item: one(items, {
-    fields: [tags.itemId],
-    references: [items.id],
-  }),
-}));
 
 export const imagesRelations = relations(images, ({ one, many }) => ({
   replacedBy: one(images, {

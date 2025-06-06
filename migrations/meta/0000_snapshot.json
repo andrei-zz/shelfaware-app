@@ -1,5 +1,5 @@
 {
-  "id": "b3975039-7b92-4cd6-888f-9d50a1b601bf",
+  "id": "fab99d8a-adaf-4e60-8ae7-9ca45cfc28b0",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -140,8 +140,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "floor": {
-          "name": "floor",
+        "plate": {
+          "name": "plate",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -364,8 +364,8 @@
           "notNull": false,
           "default": true
         },
-        "floor": {
-          "name": "floor",
+        "plate": {
+          "name": "plate",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
