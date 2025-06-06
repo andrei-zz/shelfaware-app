@@ -37,7 +37,7 @@ export const Field = ({
         {...props}
         id={id ?? name}
         name={name}
-        className={cn("w-full", props.className)}
+        className={cn("w-full text-sm", props.className)}
       />
       {Array.isArray(fieldErrors) && fieldErrors.length > 0 ? (
         <FieldError>{fieldErrors[0]}</FieldError>

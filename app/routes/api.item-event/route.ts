@@ -2,7 +2,6 @@ import type { Route } from "./+types/route";
 
 import { z } from "zod/v4";
 
-import { uidSchema } from "~/database/schema";
 import {
   createItemAndTagByUid,
   createItemEvent,
@@ -13,6 +12,7 @@ import {
   makeApiSchema,
   parseFormPayload,
   parseJsonPayload,
+  uidSchema,
 } from "~/actions/zod-utils";
 import { uploadImage } from "~/actions/image.server";
 

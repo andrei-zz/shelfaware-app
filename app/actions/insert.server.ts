@@ -4,15 +4,16 @@ import { z } from "zod/v4";
 
 import { db } from "~/database/db.server";
 import {
-  uidSchema,
   items,
   itemTypes,
   itemEvents,
   tags,
   images,
+  users,
 } from "~/database/schema";
 import { updateItem } from "./update.server";
 import type { DrizzleTx } from "./drizzle-utils";
+import { uidSchema } from "./zod-utils";
 
 export const createItemSchema = createInsertSchema(items).omit({
   id: true,
@@ -51,7 +52,7 @@ export const createItemTypeSchema = createInsertSchema(itemTypes).omit({
   updatedAt: true,
 });
 export const createItemType = async (
-  data: z.infer<typeof createItemTypeSchema>
+  data: z.output<typeof createItemTypeSchema>
 ) => {
   const createdItemTypes = await db.insert(itemTypes).values(data).returning();
   if (createdItemTypes.length !== 1) {
@@ -65,7 +66,7 @@ export const createItemEventSchema = createInsertSchema(itemEvents).omit({
   timestamp: true,
 });
 export const createItemEvent = async (
-  data: z.infer<typeof createItemEventSchema>
+  data: z.output<typeof createItemEventSchema>
 ) =>
   await db.transaction(async (tx) => {
     if (data.weight != null && data.weight < 0) {
@@ -127,7 +128,7 @@ export const createTagSchema = createInsertSchema(tags)
     uid: uidSchema,
   });
 const createTagHelper = async (
-  data: z.infer<typeof createTagSchema>,
+  data: z.output<typeof createTagSchema>,
   tx?: typeof db | DrizzleTx
 ) => {
   const database = tx ?? db;
@@ -154,7 +155,7 @@ const createTagHelper = async (
   }
   return createdTags[0];
 };
-export const createTag = async (data: z.infer<typeof createTagSchema>) => {
+export const createTag = async (data: z.output<typeof createTagSchema>) => {
   return await db.transaction(async (tx) => createTagHelper(data, tx));
 };
 
@@ -162,7 +163,7 @@ export const createItemAndTagByUidSchema = createItemEventSchema
   .omit({ itemId: true })
   .extend({ uid: uidSchema });
 export const createItemAndTagByUid = async (
-  data: z.infer<typeof createItemAndTagByUidSchema>
+  data: z.output<typeof createItemAndTagByUidSchema>
 ) => {
   return await db.transaction(async (tx) => {
     if (data.weight != null && data.weight < 0) {
@@ -197,7 +198,7 @@ export const createImageSchema = createInsertSchema(images).omit({
   replacedAt: true,
 });
 export const createImage = async (
-  data: z.infer<typeof createImageSchema>,
+  data: z.output<typeof createImageSchema>,
   tx?: typeof db | DrizzleTx
 ) => {
   const database = tx ?? db;
@@ -207,4 +208,20 @@ export const createImage = async (
     throw new Error("Created != 1 images");
   }
   return createdImages[0];
+};
+
+export const createUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  deletedAt: true,
+});
+export const createUser = async (data: z.output<typeof createUserSchema>) => {
+  const id = crypto.randomUUID();
+  const { passwordHash, ...user } = await db
+    .insert(users)
+    .values({ id, ...data })
+    .returning()
+    .then((value) => value[0]);
+  return user;
 };

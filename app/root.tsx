@@ -13,7 +13,11 @@ import {
 import "./app.css";
 import { TooltipProvider } from "~/components/ui/tooltip";
 import { AppSidebar } from "~/components/sidebar/app-sidebar";
-import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarWrapper,
+} from "~/components/ui/sidebar";
 import { SidebarInsetHeader } from "~/components/sidebar/sidebar-inset-header";
 import { Main } from "./components/main";
 import { Pre } from "./components/pre";
@@ -66,16 +70,10 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         <PreventFlashOnWrongTheme ssrTheme={Boolean(loaderData?.theme)} />
         <Links />
       </head>
-      <body className="overflow-hidden antialiased bg-background text-foreground">
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset>
-            <SidebarInsetHeader />
-            {children}
-          </SidebarInset>
-          <ScrollRestoration />
-          <Scripts />
-        </SidebarProvider>
+      <body className="overflow-hidden antialiased bg-background text-foreground min-h-full">
+        {children}
+        <ScrollRestoration />
+        <Scripts />
       </body>
     </html>
   );
@@ -90,13 +88,13 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
       themeAction="/api/set-theme"
     >
       <TooltipProvider delayDuration={400} skipDelayDuration={300}>
-        {children}
+        <SidebarProvider>{children}</SidebarProvider>
       </TooltipProvider>
     </ThemeProvider>
   );
 };
 
-const App = ({}: Route.ComponentProps) => {
+export default ({}: Route.ComponentProps) => {
   return (
     <Providers>
       <AppLayout>
@@ -105,7 +103,6 @@ const App = ({}: Route.ComponentProps) => {
     </Providers>
   );
 };
-export default App;
 
 export const HydrateFallback = ({}: Route.HydrateFallbackProps) => {
   return (

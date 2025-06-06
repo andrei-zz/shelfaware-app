@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from "react-router";
 import { DateTime } from "luxon";
 import { Paperclip } from "lucide-react";
 
-import type { getTag } from "~/actions/select.server";
+import type { getTags } from "~/actions/select.server";
 
 import { cn } from "~/lib/utils";
 import { CtxMenu } from "~/components/ctx-menu";
@@ -10,7 +10,7 @@ import { CtxMenu } from "~/components/ctx-menu";
 export const TagItem = ({
   tag,
 }: {
-  tag: Awaited<ReturnType<typeof getTag>>;
+  tag: Awaited<ReturnType<typeof getTags>>[number];
 }) => {
   const navigate = useNavigate();
 

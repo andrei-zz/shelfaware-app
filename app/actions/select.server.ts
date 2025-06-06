@@ -12,8 +12,16 @@ import {
 } from "drizzle-orm";
 
 import { db } from "~/database/db.server";
-import { items, itemTypes, itemEvents, tags, images } from "~/database/schema";
+import {
+  items,
+  itemTypes,
+  itemEvents,
+  tags,
+  images,
+  users,
+} from "~/database/schema";
 import type { DrizzleTx } from "./drizzle-utils";
+import { createSelectSchema } from "drizzle-zod";
 
 // items
 
@@ -512,3 +520,33 @@ export const getImageWithS3Key = async (imageId: number) => {
 
   return null;
 };
+
+export const getRawUser = async (userId: string) =>
+  await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .then((value) => value[0]);
+
+export const getUser = async (userId: string) =>
+  await db.query.users.findFirst({
+    columns: {
+      passwordHash: false,
+    },
+    where: eq(users.id, userId),
+  });
+
+export const getRawUserByEmail = async (userEmail: string) =>
+  await db
+    .select()
+    .from(users)
+    .where(eq(users.email, userEmail))
+    .then((value) => value[0]);
+
+export const getUserByEmail = async (userEmail: string) =>
+  await db.query.users.findFirst({
+    columns: {
+      passwordHash: false,
+    },
+    where: eq(users.email, userEmail),
+  });

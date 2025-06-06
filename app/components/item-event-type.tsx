@@ -1,6 +1,4 @@
-import type { z } from "zod/v4";
-
-import type { createItemEventSchema } from "~/actions/insert.server";
+import type { eventTypeEnum } from "~/database/schema";
 
 import { cn } from "~/lib/utils";
 import { Badge } from "~/components/ui/badge";
@@ -9,7 +7,7 @@ export const ItemEventType = ({
   type,
   ...props
 }: React.ComponentProps<typeof Badge> & {
-  type: z.infer<typeof createItemEventSchema>["eventType"];
+  type: (typeof eventTypeEnum.enumValues)[number];
 }) => (
   <Badge
     variant="outline"
@@ -22,10 +20,16 @@ export const ItemEventType = ({
         ? "bg-red-600 dark:bg-red-800"
         : type === "moved"
         ? "bg-yellow-600 dark:bg-yellow-800"
+        : type === "image"
+        ? "bg-blue-600 dark:bg-blue-800"
         : undefined,
       props.className
     )}
   >
-    {props.children ?? type === "moved" ? "mov" : type}
+    {props.children ?? type === "moved"
+      ? "mov"
+      : type === "image"
+      ? "img"
+      : type}
   </Badge>
 );

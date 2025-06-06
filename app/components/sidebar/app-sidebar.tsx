@@ -13,7 +13,7 @@ import {
   type LucideProps,
 } from "lucide-react";
 
-import { cn } from "~/lib/utils";
+import { cn, getInitials } from "~/lib/utils";
 import {
   Collapsible,
   CollapsibleContent,
@@ -47,6 +47,7 @@ import {
   CardTitle,
 } from "../ui/card";
 import { DropdownMenuItem } from "../ui/dropdown-menu";
+import type { getUser } from "~/actions/select.server";
 
 const sidebarItems: {
   title: string;
@@ -143,7 +144,12 @@ const sidebarItems: {
   },
 ];
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  user,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & {
+  user?: Awaited<ReturnType<typeof getUser>>;
+}) {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -269,7 +275,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </DropdownMenuItem>
               </CardContent>
               <CardFooter className="px-1">
-                <DropdownMenuItem onSelect={() => {}} className="w-full">
+                <DropdownMenuItem onSelect={() => navigate("/logout")} className="w-full">
                   Logout
                 </DropdownMenuItem>
               </CardFooter>
@@ -286,10 +292,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           >
             <div className="flex w-full items-center gap-2">
               <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                US
+                {getInitials(user?.name ?? user?.email.split("@")[0])}
               </div>
               <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-medium">User Name</span>
+                <span className="font-medium">{user?.name ?? user?.email}</span>
               </div>
             </div>
             <Menu />

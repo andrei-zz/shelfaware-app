@@ -16,7 +16,6 @@ import {
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { DateTime } from "luxon";
-import { z } from "zod/v4";
 
 // Types
 
@@ -32,7 +31,7 @@ const unixTimestamp = customType<{
     if (typeof value === "string") {
       return DateTime.fromSQL(value, { zone: "utc" }).toMillis();
     } else {
-      return value?.getTime();
+      return value.getTime();
     }
   },
   toDriver(value) {
@@ -48,10 +47,6 @@ const bytea = customType<{
   dataType: () => "bytea",
   toDriver: (value) => Buffer.from(value),
   fromDriver: (value) => Buffer.from(value),
-});
-
-export const uidSchema = z.string().regex(/^[0-9a-f]+$/, {
-  message: "UID must be lowercase hex (0-9, a-f only)",
 });
 
 // Tables and relations
@@ -121,7 +116,12 @@ export const itemTypesRelations = relations(itemTypes, ({ many }) => ({
   items: many(items),
 }));
 
-export const eventTypeEnum = pgEnum("event_type", ["in", "out", "moved"]);
+export const eventTypeEnum = pgEnum("event_type", [
+  "in",
+  "out",
+  "moved",
+  "image",
+]);
 
 export const itemEvents = pgTable(
   "item_events",
@@ -195,11 +195,18 @@ export const tagsRelations = relations(tags, ({ one }) => ({
   }),
 }));
 
+export const imageTypeEnum = pgEnum("image_type", [
+  "item",
+  "item_event",
+  "avatar",
+]);
+
 export const images = pgTable(
   "images",
   {
     id: serial("id").primaryKey(),
     s3Key: uuid("s3_key").unique().notNull(),
+    type: imageTypeEnum("type").notNull(),
     title: text("title"),
     description: text("description"),
     mimeType: text("mime_type").notNull(),
@@ -222,6 +229,53 @@ export const imagesRelations = relations(images, ({ one, many }) => ({
     fields: [images.replacedById],
     references: [images.id],
   }),
+  users: many(users),
   items: many(items),
   itemEvents: many(itemEvents),
+}));
+
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  name: text("name").notNull(),
+  avatarImageId: integer("avatar_image_id").references(() => images.id, {
+    onDelete: "set null",
+  }),
+  createdAt: unixTimestamp("created_at")
+    .notNull()
+    .default(sql`now()`),
+  updatedAt: unixTimestamp("updated_at")
+    .notNull()
+    .default(sql`now()`),
+  deletedAt: unixTimestamp("deleted_at"),
+});
+
+export const usersRelations = relations(users, ({ one, many }) => ({
+  avatar: one(images, {
+    fields: [users.avatarImageId],
+    references: [images.id],
+  }),
+  apiKeys: many(apiKeys),
+}));
+
+export const apiKeys = pgTable("api_keys", {
+  id: serial("id").primaryKey(),
+  userId: uuid("user_id").references(() => users.id, {
+    onDelete: "cascade",
+  }),
+  keyHash: text("key_hash").notNull(),
+  name: text("name"),
+  createdAt: unixTimestamp("created_at")
+    .notNull()
+    .default(sql`now()`),
+  revokedAt: unixTimestamp("revoked_at"),
+  expireAt: unixTimestamp("expire_at"),
+});
+
+export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
+  user: one(users, {
+    fields: [apiKeys.userId],
+    references: [users.id],
+  }),
 }));

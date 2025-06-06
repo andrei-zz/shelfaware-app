@@ -3,17 +3,11 @@ import { createUpdateSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
 import { db } from "~/database/db.server";
-import {
-  images,
-  itemEvents,
-  items,
-  itemTypes,
-  tags,
-  uidSchema,
-} from "~/database/schema";
+import { images, itemEvents, items, itemTypes, tags } from "~/database/schema";
 import { createImage } from "./insert.server";
 import { getTags } from "./select.server";
 import type { DrizzleTx } from "./drizzle-utils";
+import { uidSchema } from "./zod-utils";
 
 export const updateItemSchema = createUpdateSchema(items)
   .omit({
@@ -25,7 +19,7 @@ export const updateItemSchema = createUpdateSchema(items)
   .required({ id: true });
 // Only fields that update only the items table are allowed here
 export const updateItem = async (
-  { id, ...data }: z.infer<typeof updateItemSchema>,
+  { id, ...data }: z.output<typeof updateItemSchema>,
   tx?: typeof db | DrizzleTx
 ) => {
   const database = tx ?? db;
@@ -60,7 +54,7 @@ const updateItemsSchema = createUpdateSchema(items)
   })
   .partial();
 export const updateItems = async (
-  data: z.infer<typeof updateItemsSchema>,
+  data: z.output<typeof updateItemsSchema>,
   conditions: [SQLWrapper, ...SQLWrapper[]],
   tx?: typeof db | DrizzleTx
 ) => {
@@ -101,7 +95,7 @@ export const updateItemTypeSchema = createUpdateSchema(itemTypes)
 export const updateItemType = async ({
   id,
   ...data
-}: z.infer<typeof updateItemTypeSchema>) => {
+}: z.output<typeof updateItemTypeSchema>) => {
   return await db
     .update(itemTypes)
     .set({
@@ -122,7 +116,7 @@ export const updateTagSchema = createUpdateSchema(tags)
   .extend({ uid: uidSchema.optional() })
   .partial();
 export const updateTagHelper = async (
-  { id, uid, ...data }: z.infer<typeof updateTagSchema>,
+  { id, uid, ...data }: z.output<typeof updateTagSchema>,
   tx?: typeof db | DrizzleTx
 ) => {
   const database = tx ?? db;
@@ -185,7 +179,7 @@ export const updateTagHelper = async (
     .then((value) => value[0]);
 };
 export const updateTag = async (
-  data: z.infer<typeof updateTagSchema>,
+  data: z.output<typeof updateTagSchema>,
   tx?: typeof db | DrizzleTx
 ) => await db.transaction(async (tx) => updateTagHelper(data, tx));
 
@@ -200,7 +194,7 @@ export const updateImageSchema = createUpdateSchema(images)
 export const updateImage = async ({
   id,
   ...data
-}: z.infer<typeof updateImageSchema>) =>
+}: z.output<typeof updateImageSchema>) =>
   await db
     .update(images)
     .set(data)
@@ -220,7 +214,7 @@ export const replaceImageSchema = createUpdateSchema(images)
 export const replaceImage = async ({
   id,
   ...data
-}: z.infer<typeof replaceImageSchema>) => {
+}: z.output<typeof replaceImageSchema>) => {
   return await db.transaction(async (tx) => {
     const { s3Key: _s3Key, mimeType: _mimeType, ...updateImageData } = data;
     const newImage = await createImage(data, tx);

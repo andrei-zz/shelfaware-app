@@ -7,8 +7,13 @@ import {
   ZodNumber,
   ZodOptional,
   ZodString,
+  ZodType,
 } from "zod/v4";
 import type { $ZodObject, $ZodType } from "zod/v4/core";
+
+export const uidSchema = z.string().regex(/^[0-9a-f]+$/, {
+  message: "UID must be lowercase hex (0-9, a-f only)",
+});
 
 export const coerceString = (val: unknown): string | null | undefined => {
   if (val === "" || val === null) {
@@ -120,7 +125,6 @@ const makeTransformFn = <T extends $ZodObject>(schema: T) => {
   };
 };
 
-// The returned type is a ZodEffects that ultimately yields the same shape as `schema`
 export const makeApiSchema = <T extends $ZodObject>(schema: T) => {
   const rawStrict = makeRawSchema(schema);
   const coerced = rawStrict.transform(makeTransformFn(schema));
@@ -134,7 +138,7 @@ const isRecord = (x: unknown): x is Record<string, unknown> =>
  * Core payload parser: given an unknown raw object and a list of
  * { schema, dummy } candidates, try each one in turn.
  */
-const parsePayload = <T extends $ZodObject>(
+const parsePayload = <T extends ZodType>(
   raw: unknown,
   schema: T,
   dummy?: Partial<z.input<T>>
@@ -173,7 +177,7 @@ const parsePayload = <T extends $ZodObject>(
  * For multipart/form-data requests: pull out the File entries,
  * build a plain object of the other fields, then parse.
  */
-export const parseFormPayload = <T extends $ZodObject>(
+export const parseFormPayload = <T extends ZodType>(
   form: Record<string, unknown>,
   schema: T,
   dummy?: Partial<z.input<T>>
@@ -189,7 +193,7 @@ export const parseFormPayload = <T extends $ZodObject>(
 /**
  * For JSON requests: just pass through to parsePayload.
  */
-export const parseJsonPayload = <T extends $ZodObject>(
+export const parseJsonPayload = <T extends ZodType>(
   jsonData: unknown,
   schema: T,
   dummy?: Partial<z.input<T>>

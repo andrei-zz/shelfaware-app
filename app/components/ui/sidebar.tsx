@@ -59,14 +59,12 @@ function SidebarProvider({
   defaultOpen = true,
   open: openProp,
   onOpenChange: setOpenProp,
-  className,
-  style,
   children,
-  ...props
-}: React.ComponentProps<"div"> & {
+}: {
   defaultOpen?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  children?: React.ReactNode;
 }) {
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
@@ -130,26 +128,40 @@ function SidebarProvider({
 
   return (
     <SidebarContext.Provider value={contextValue}>
-      <div
-        data-slot="sidebar-wrapper"
-        style={
-          {
-            "--sidebar-width-mobile": SIDEBAR_WIDTH_MOBILE,
-            "--sidebar-width-md": SIDEBAR_WIDTH_MD,
-            "--sidebar-width-lg": SIDEBAR_WIDTH_LG,
-            "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
-            ...style,
-          } as React.CSSProperties
-        }
-        className={cn(
-          "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",
-          className
-        )}
-        {...props}
-      >
-        {children}
-      </div>
+      {children}
     </SidebarContext.Provider>
+  );
+}
+
+function SidebarWrapper({
+  className,
+  style,
+  children,
+  ...props
+}: React.ComponentProps<"div">) {
+  const { state } = useSidebar();
+
+  return (
+    <div
+      data-slot="sidebar-wrapper"
+      data-state={state}
+      style={
+        {
+          "--sidebar-width-mobile": SIDEBAR_WIDTH_MOBILE,
+          "--sidebar-width-md": SIDEBAR_WIDTH_MD,
+          "--sidebar-width-lg": SIDEBAR_WIDTH_LG,
+          "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+          ...style,
+        } as React.CSSProperties
+      }
+      className={cn(
+        "group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -722,6 +734,7 @@ export {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarProvider,
+  SidebarWrapper,
   SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
