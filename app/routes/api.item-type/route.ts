@@ -5,7 +5,7 @@ import { z } from "zod/v4";
 import { createItemType, createItemTypeSchema } from "~/actions/insert.server";
 import { getItemType, getItemTypeByName } from "~/actions/select.server";
 import { updateItemType, updateItemTypeSchema } from "~/actions/update.server";
-import { makeApiSchema } from "~/actions/zod-utils";
+import { coerceFormData } from "~/actions/zod-utils";
 
 const PATHNAME = "/api/item-type";
 
@@ -76,7 +76,11 @@ export const action = async ({ request }: Route.ActionArgs) => {
       request.headers.get("content-type");
     if (reqContentType?.startsWith("multipart/form-data")) {
       const reqFormData = await request.formData();
-      payload = Object.fromEntries(reqFormData);
+      const formData = Object.fromEntries(reqFormData);
+      payload =
+        request.method === "POST"
+          ? coerceFormData(createItemTypeSchema, formData)
+          : coerceFormData(updateItemTypeSchema, formData);
     } else if (reqContentType?.startsWith("application/json")) {
       payload = await request.json();
     } else {
@@ -92,7 +96,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   try {
     switch (request.method) {
       case "POST": {
-        const parsed = makeApiSchema(createItemTypeSchema).parse(payload);
+        const parsed = createItemTypeSchema.parse(payload);
         const newItemType = await createItemType(parsed);
 
         return Response.json(newItemType, {
@@ -103,7 +107,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
         });
       }
       case "PATCH": {
-        const parsed = makeApiSchema(updateItemTypeSchema).parse(payload);
+        const parsed = updateItemTypeSchema.parse(payload);
         const updatedItemType = await updateItemType(parsed);
 
         return Response.json(updatedItemType, {
@@ -125,7 +129,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
     if (err instanceof z.ZodError) {
       return Response.json(
-        { message: "Bad Request", errors: err.flatten().fieldErrors },
+        { message: "Bad Request", errors: z.flattenError(err).fieldErrors },
         {
           status: 400,
           headers: { "Content-Type": "application/json" },

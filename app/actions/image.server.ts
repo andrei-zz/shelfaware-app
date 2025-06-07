@@ -25,5 +25,7 @@ export const uploadImage = async (
       ...(imageBuffer != null ? [putS3Object(s3Key, imageBuffer)] : []),
     ]);
     return image;
+  } else {
+    return null;
   }
 };

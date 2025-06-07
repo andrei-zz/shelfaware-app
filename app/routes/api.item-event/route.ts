@@ -8,34 +8,28 @@ import {
   createItemEventSchema,
 } from "~/actions/insert.server";
 import { getItemByUid, getItemEvent } from "~/actions/select.server";
-import {
-  makeApiSchema,
-  parseFormPayload,
-  parseJsonPayload,
-  uidSchema,
-} from "~/actions/zod-utils";
-import { uploadImage } from "~/actions/image.server";
+import { coerceFormData, parseWithDummy, uidSchema } from "~/actions/zod-utils";
+import { MAX_IMAGE_FILE_SIZE, uploadImage } from "~/actions/image.server";
 
 const PATHNAME = "/api/item-event";
 
-const postSchema = makeApiSchema(
-  createItemEventSchema
-    .partial({ itemId: true })
-    .extend({ uid: uidSchema.optional() })
-).superRefine((data, ctx) => {
-  if (data.itemId == null && data.uid == null) {
-    ctx.addIssue({
-      path: ["itemId"],
-      message: "Either itemId or uid must be provided",
-      code: z.ZodIssueCode.custom,
-    });
-    ctx.addIssue({
-      path: ["uid"],
-      message: "Either uid or itemId must be provided",
-      code: z.ZodIssueCode.custom,
-    });
-  }
-});
+const postSchema = createItemEventSchema
+  .partial({ itemId: true })
+  .extend({ uid: uidSchema.optional() })
+  .check((ctx) => {
+    if (ctx.value.itemId == null && ctx.value.uid == null) {
+      ctx.issues.push({
+        input: ctx.value.itemId,
+        code: "custom",
+        message: "Either itemId or uid must be provided",
+      });
+      ctx.issues.push({
+        input: ctx.value.uid,
+        code: "custom",
+        message: "Either uid or itemId must be provided",
+      });
+    }
+  });
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   let relativeUrl: string = PATHNAME;
@@ -101,29 +95,31 @@ export const action = async ({ request }: Route.ActionArgs) => {
     if (reqContentType?.startsWith("multipart/form-data")) {
       const reqFormData = await request.formData();
       const { image, ...formData } = Object.fromEntries(reqFormData);
-      if (image instanceof File) {
-        imageFile = image;
-      }
 
       const dummy: Record<string, unknown> = {};
-      if (
-        imageFile?.size != null &&
-        imageFile.size > 0 &&
-        imageFile.size <= 10 * 1024 * 1024
-      ) {
-        dummy.imageId = 0;
+      if (image instanceof File) {
+        imageFile = image;
+        if (
+          image.size != null &&
+          image.size > 0 &&
+          image.size <= MAX_IMAGE_FILE_SIZE
+        ) {
+          dummy.imageId = 0;
+        }
       }
-      payload = parseFormPayload(formData, postSchema, dummy);
+
+      const coercedFormData = coerceFormData(postSchema, formData);
+      payload = parseWithDummy(postSchema, coercedFormData, dummy);
     } else if (reqContentType?.startsWith("application/json")) {
       const jsonData = await request.json();
-      payload = parseJsonPayload(jsonData, postSchema);
+      payload = parseWithDummy(postSchema, jsonData);
     } else {
       return new Response("Invalid Content-Type", { status: 400 });
     }
   } catch (err: unknown) {
     if (err instanceof z.ZodError) {
       return Response.json(
-        { message: "Bad Request", errors: err.flatten().fieldErrors },
+        { message: "Bad Request", errors: z.flattenError(err).fieldErrors },
         {
           status: 400,
           headers: { "Content-Type": "application/json" },
@@ -137,9 +133,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
     });
   }
 
-  const image = await uploadImage(imageFile);
-  payload.imageId = image?.id;
-
+  const image = await uploadImage(imageFile, { type: "item_event" });
+  payload.imageId = image?.id ?? payload.imageId;
   if (imageFile != null && !payload.imageId) {
     return new Response("Invalid image file", { status: 400 });
   }
@@ -187,7 +182,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   } catch (err: unknown) {
     if (err instanceof z.ZodError) {
       return Response.json(
-        { message: "Bad Request", errors: err.flatten().fieldErrors },
+        { message: "Bad Request", errors: z.flattenError(err).fieldErrors },
         {
           status: 400,
           headers: { "Content-Type": "application/json" },

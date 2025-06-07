@@ -210,7 +210,7 @@ export const replaceImageSchema = createUpdateSchema(images)
     createdAt: true,
     replacedAt: true,
   })
-  .required({ id: true, s3Key: true, mimeType: true });
+  .required({ id: true, type: true, s3Key: true, mimeType: true });
 export const replaceImage = async ({
   id,
   ...data

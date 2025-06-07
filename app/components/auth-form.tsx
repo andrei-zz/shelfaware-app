@@ -54,7 +54,7 @@ export function AuthForm({
                   autoComplete="current-password"
                   label="Password"
                 />
-                <SubmitButton fetcher={fetcher} className="w-full mt-6">
+                <SubmitButton fetcher={fetcher} className="w-full mt-8">
                   {type === "login" ? "Login" : "Register"}
                 </SubmitButton>
               </div>

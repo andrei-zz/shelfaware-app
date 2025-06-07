@@ -1,6 +1,6 @@
 import type { Route } from "./+types/route";
 
-import { ZodError } from "zod/v4";
+import { z } from "zod/v4";
 
 import {
   createItem,
@@ -16,11 +16,10 @@ import {
 } from "~/actions/update.server";
 import {
   coerceTimestamp,
-  makeApiSchema,
-  parseFormPayload,
-  parseJsonPayload,
+  coerceFormData,
+  parseWithDummy,
 } from "~/actions/zod-utils";
-import { uploadImage } from "~/actions/image.server";
+import { MAX_IMAGE_FILE_SIZE, uploadImage } from "~/actions/image.server";
 
 const PATHNAME = "/api/item";
 
@@ -105,31 +104,41 @@ export const action = async ({ request }: Route.ActionArgs) => {
         ...formData
       } = Object.fromEntries(reqFormData);
 
+      const dummy: Record<string, unknown> = {};
+      if (request.method === "PATCH") {
+      }
       if (image instanceof File) {
         imageFile = image;
+        if (
+          image.size != null &&
+          image.size > 0 &&
+          image.size <= MAX_IMAGE_FILE_SIZE
+        ) {
+          dummy.imageId = 0;
+        }
       }
       if (typeof formTagId === "string") {
         tagId = formTagId;
       }
       if (typeof formItemTypeName === "string") {
         itemTypeName = formItemTypeName;
-      }
-
-      const dummy: Record<string, unknown> = {};
-      if (
-        imageFile?.size != null &&
-        imageFile.size > 0 &&
-        imageFile.size <= 10 * 1024 * 1024
-      ) {
-        dummy.imageId = 0;
-      }
-      if (itemTypeName != null) {
         dummy.itemTypeId = 0;
       }
+
+      const coercedFormData =
+        request.method === "POST"
+          ? coerceFormData(createItemSchema, {
+              ...formData,
+              expireAt: coerceTimestamp(formData.expireAt),
+            })
+          : coerceFormData(updateItemSchema, {
+              ...formData,
+              expireAt: coerceTimestamp(formData.expireAt),
+            });
       payload =
         request.method === "POST"
-          ? parseFormPayload(formData, makeApiSchema(createItemSchema), dummy)
-          : parseFormPayload(formData, makeApiSchema(updateItemSchema), dummy);
+          ? parseWithDummy(createItemSchema, coercedFormData, dummy)
+          : parseWithDummy(updateItemSchema, coercedFormData, dummy);
     } else if (reqContentType?.startsWith("application/json")) {
       const {
         tagId: jsonTagId,
@@ -137,28 +146,26 @@ export const action = async ({ request }: Route.ActionArgs) => {
         ...jsonData
       } = await request.json();
 
+      const dummy: Record<string, unknown> = {};
       if (typeof jsonTagId === "string" || typeof jsonTagId === "number") {
         tagId = jsonTagId;
       }
       if (typeof jsonItemTypeName === "string") {
         itemTypeName = jsonItemTypeName;
-      }
-
-      const dummy: Record<string, unknown> = {};
-      if (itemTypeName != null) {
         dummy.itemTypeId = 0;
       }
+
       payload =
         request.method === "POST"
-          ? parseJsonPayload(jsonData, makeApiSchema(createItemSchema), dummy)
-          : parseJsonPayload(jsonData, makeApiSchema(updateItemSchema), dummy);
+          ? parseWithDummy(createItemSchema, jsonData, dummy)
+          : parseWithDummy(updateItemSchema, jsonData, dummy);
     } else {
       return new Response("Invalid Content-Type", { status: 400 });
     }
   } catch (err: unknown) {
-    if (err instanceof ZodError) {
+    if (err instanceof z.ZodError) {
       return Response.json(
-        { message: "Bad Request", errors: err.flatten().fieldErrors },
+        { message: "Bad Request", errors: z.flattenError(err).fieldErrors },
         {
           status: 400,
           headers: { "Content-Type": "application/json" },
@@ -172,8 +179,8 @@ export const action = async ({ request }: Route.ActionArgs) => {
     });
   }
 
-  const image = await uploadImage(imageFile);
-  payload.imageId = image?.id;
+  const image = await uploadImage(imageFile, { type: "item" });
+  payload.imageId = image?.id ?? payload.imageId;
   if (imageFile != null && !payload.imageId) {
     return new Response("Invalid image file", { status: 400 });
   }
@@ -187,10 +194,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   try {
     switch (request.method) {
       case "POST": {
-        const parsed = makeApiSchema(createItemSchema).parse({
-          ...payload,
-          expireAt: coerceTimestamp(payload.exireAt),
-        });
+        const parsed = createItemSchema.parse(payload);
         const newItem = await createItem(parsed);
 
         if (tagId != null && tagId !== "" && newItem != null) {
@@ -208,10 +212,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
         });
       }
       case "PATCH": {
-        const parsed = makeApiSchema(updateItemSchema).parse({
-          ...payload,
-          expireAt: coerceTimestamp(payload.exireAt),
-        });
+        const parsed = updateItemSchema.parse(payload);
         const updatedItem = await updateItem(parsed);
 
         if (tagId != null && tagId !== "" && updatedItem != null) {
@@ -236,10 +237,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
       }
     }
   } catch (err: unknown) {
-    if (err instanceof ZodError) {
+    if (err instanceof z.ZodError) {
       console.log("Should have caught this zod error earilier", err);
       return Response.json(
-        { message: "Bad Request", errors: err.flatten().fieldErrors },
+        { message: "Bad Request", errors: z.flattenError(err).fieldErrors },
         {
           status: 400,
           headers: { "Content-Type": "application/json" },

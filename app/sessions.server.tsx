@@ -10,7 +10,7 @@ const sessionStorage = createCookieSessionStorage({
     httpOnly: true,
     sameSite: "lax",
     secrets: [process.env.SESSION_SECRET ?? "s3cr3t"],
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
   },
 });
 

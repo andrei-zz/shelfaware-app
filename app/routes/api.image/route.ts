@@ -12,11 +12,7 @@ import {
   updateImageSchema,
 } from "~/actions/update.server";
 import { getSignedS3Url, putS3Object } from "~/actions/s3.server";
-import {
-  makeApiSchema,
-  parseFormPayload,
-  parseJsonPayload,
-} from "~/actions/zod-utils";
+import { coerceFormData, parseWithDummy } from "~/actions/zod-utils";
 import { MAX_IMAGE_FILE_SIZE, uploadImage } from "~/actions/image.server";
 
 const PATHNAME = "/api/image";
@@ -65,7 +61,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
-  let payload: Record<string, FormDataEntryValue> = {};
+  let payload: Record<string, unknown> = {};
   let imageFile: File | null = null;
   try {
     const reqContentType =
@@ -74,44 +70,53 @@ export const action = async ({ request }: Route.ActionArgs) => {
     if (reqContentType?.startsWith("multipart/form-data")) {
       const reqFormData = await request.formData();
       const { image, ...formData } = Object.fromEntries(reqFormData);
-      if (image instanceof File) {
-        imageFile = image;
-      }
 
       const dummy: Record<string, unknown> = {};
-      if (
-        imageFile?.size != null &&
-        imageFile.size > 0 &&
-        imageFile.size <= 10 * 1024 * 1024
-      ) {
-        if (request.method === "PATCH") {
-          dummy.id = 0;
+      if (image instanceof File) {
+        imageFile = image;
+        if (
+          image.size != null &&
+          image.size > 0 &&
+          image.size <= MAX_IMAGE_FILE_SIZE
+        ) {
+          if (request.method === "PATCH") {
+            dummy.id = 0;
+          }
+          dummy.s3Key = crypto.randomUUID();
+          dummy.mimeType = "image/gif";
         }
-        dummy.s3Key = crypto.randomUUID();
-        dummy.mimeType = "image/gif";
       }
+
+      const coercedFormData =
+        request.method === "POST"
+          ? coerceFormData(createImageSchema, formData)
+          : imageFile?.size != null &&
+            imageFile.size > 0 &&
+            imageFile.size <= MAX_IMAGE_FILE_SIZE
+          ? coerceFormData(replaceImageSchema, formData)
+          : coerceFormData(updateImageSchema, formData);
       payload =
         request.method === "POST"
-          ? parseFormPayload(formData, makeApiSchema(createImageSchema), dummy)
-          : parseFormPayload(
-              formData,
-              makeApiSchema(replaceImageSchema),
-              dummy
-            );
+          ? parseWithDummy(createImageSchema, coercedFormData, dummy)
+          : imageFile?.size != null &&
+            imageFile.size > 0 &&
+            imageFile.size <= MAX_IMAGE_FILE_SIZE
+          ? parseWithDummy(replaceImageSchema, coercedFormData, dummy)
+          : parseWithDummy(updateImageSchema, coercedFormData, dummy);
     } else if (reqContentType?.startsWith("application/json")) {
-      if (request.method === "POST") {
+      if (request.method !== "PATCH") {
         return new Response("Invalid Content-Type", { status: 400 });
       }
 
       const jsonData = await request.json();
-      payload = parseJsonPayload(jsonData, makeApiSchema(replaceImageSchema));
+      payload = updateImageSchema.parse(jsonData);
     } else {
       return new Response("Invalid Content-Type", { status: 400 });
     }
   } catch (err: unknown) {
     if (err instanceof z.ZodError) {
       return Response.json(
-        { message: "Bad Request", errors: err.flatten().fieldErrors },
+        { message: "Bad Request", errors: z.flattenError(err).fieldErrors },
         {
           status: 400,
           headers: { "Content-Type": "application/json" },
@@ -132,9 +137,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
         if (newImage == null) {
           return new Response("Invalid or missing image file", { status: 400 });
         }
-        const { s3Key: _, ...newImg } = newImage;
+        const { s3Key: _, ...image } = newImage;
 
-        return Response.json(newImg, {
+        return Response.json(image, {
           status: 201,
           headers: {
             "Content-Type": "application/json",
@@ -143,10 +148,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
       }
       case "PATCH": {
         if (imageFile == null) {
-          const parsed = makeApiSchema(updateImageSchema).parse({
-            ...payload,
+          const parsed = updateImageSchema.parse({
             s3Key: null,
             mimeType: null,
+            ...payload,
           });
           const image = await updateImage(parsed);
 
@@ -166,7 +171,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
           const mimeType = imageFile.type;
           const s3Key = crypto.randomUUID();
 
-          const parsed = makeApiSchema(replaceImageSchema).parse({
+          const parsed = replaceImageSchema.parse({
             ...payload,
             s3Key,
             mimeType,
@@ -197,7 +202,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   } catch (err: unknown) {
     if (err instanceof z.ZodError) {
       return Response.json(
-        { message: "Bad Request", errors: err.flatten().fieldErrors },
+        { message: "Bad Request", errors: z.flattenError(err).fieldErrors },
         {
           status: 400,
           headers: { "Content-Type": "application/json" },

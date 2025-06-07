@@ -1,4 +1,3 @@
-import { authenticate } from "~/actions/auth.server";
 import type { Route } from "./+types/route";
 
 import { getItemTypes } from "~/actions/select.server";
@@ -13,9 +12,7 @@ export const meta = ({}: Route.MetaArgs) => {
   ];
 };
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-  await authenticate(request, request.url);
-
+export const loader = async ({}: Route.LoaderArgs) => {
   const itemTypes = await getItemTypes();
   return { itemTypes };
 };

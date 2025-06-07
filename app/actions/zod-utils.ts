@@ -1,63 +1,17 @@
-import {
-  z,
-  ZodBoolean,
-  ZodDate,
-  ZodDefault,
-  ZodNullable,
-  ZodNumber,
-  ZodOptional,
-  ZodString,
-  ZodType,
-} from "zod/v4";
-import type { $ZodObject, $ZodType } from "zod/v4/core";
+import { z } from "zod/v4";
+
+const isRecord = (x: unknown): x is Record<string, unknown> =>
+  x !== null && typeof x === "object" && !Array.isArray(x);
+
+const isPlainRecord = (x: unknown): x is Record<string, unknown> => {
+  if (x === null || typeof x !== "object" || Array.isArray(x)) return false;
+  const proto = Object.getPrototypeOf(x);
+  return proto === Object.prototype || proto === null;
+};
 
 export const uidSchema = z.string().regex(/^[0-9a-f]+$/, {
   message: "UID must be lowercase hex (0-9, a-f only)",
 });
-
-export const coerceString = (val: unknown): string | null | undefined => {
-  if (val === "" || val === null) {
-    return null;
-  } else if (val === undefined) {
-    return undefined;
-  } else if (typeof val === "string") {
-    return val;
-  }
-  throw new Error(`Invalid type for string: ${typeof val}`);
-};
-
-export const coerceNumber = (val: unknown): number | null | undefined => {
-  if (val === "" || val === null) {
-    return null;
-  } else if (val === undefined) {
-    return undefined;
-  } else if (typeof val === "string") {
-    const n = Number(val);
-    if (Number.isNaN(n)) throw new Error(`Invalid number: ${val}`);
-    return n;
-  } else if (typeof val === "number") {
-    return val;
-  }
-  throw new Error(`Invalid type for number: ${typeof val}`);
-};
-
-export const coerceBoolean = (val: unknown): boolean | null | undefined => {
-  if (val === "" || val === null) {
-    return null;
-  } else if (val === undefined) {
-    return undefined;
-  } else if (typeof val === "string") {
-    if (val.toLowerCase() === "true" || val.toLowerCase() === "on") {
-      return true;
-    }
-    if (val.toLowerCase() === "false" || val.toLowerCase() === "off") {
-      return false;
-    }
-  } else if (typeof val === "boolean") {
-    return val;
-  }
-  throw new Error(`Invalid type for boolean: ${typeof val}`);
-};
 
 export const coerceTimestamp = (val: unknown): number | null | undefined => {
   if (val === "" || val === null) {
@@ -74,127 +28,112 @@ export const coerceTimestamp = (val: unknown): number | null | undefined => {
   return d.valueOf();
 };
 
-/**
- * Given a ZodObject schema, returns a `z.object(...)` where every key is
- * `z.unknown().optional()` and the whole thing is strict.
- */
-const makeRawSchema = <T extends $ZodObject>(schema: T) => {
-  const shape = schema._zod.def.shape;
-  const rawShape: Record<string, $ZodType> = {};
-
-  for (const key of Object.keys(shape)) {
-    rawShape[key] = z.unknown().optional();
+// Recursively unwrap default, optional, nullable
+const unwrapSchema = (schema: z.core.$ZodType): z.core.$ZodType => {
+  if (
+    schema instanceof z.ZodOptional ||
+    schema instanceof z.ZodNonOptional ||
+    schema instanceof z.ZodDefault ||
+    schema instanceof z.ZodNullable
+  ) {
+    return unwrapSchema(schema._zod.def.innerType);
   }
-
-  return z.object(rawShape).strict();
+  return schema;
 };
 
-const makeTransformFn = <T extends $ZodObject>(schema: T) => {
-  const shape = schema._zod.def.shape;
+/**
+ * Converts FormData to a partial record suitable for parsing by a Zod schema.
+ * - All schema fields are treated as optional.
+ * - Empty strings for string or number fields become null.
+ * - Undefined stays undefined; null stays null.
+ * - Date/timestamp fields should be handled manually.
+ * - Boolean coercion can be handled via z.coerce.boolean() in the schema.
+ */
+export const coerceFormData = <T extends z.ZodObject>(
+  schema: T,
+  formData: Record<string, unknown>
+): Partial<z.input<T>> => {
+  const result: Partial<z.input<T>> = {};
 
-  return (raw: unknown) => {
-    const obj = raw as Record<string, unknown>;
-    const out: Record<string, unknown> = {};
+  // Extract the shape of the object schema
+  const shape = schema.shape;
 
-    for (const key of Object.keys(shape)) {
-      let fieldSchema = shape[key];
-      let val = obj[key];
-
-      while (
-        fieldSchema instanceof ZodOptional ||
-        fieldSchema instanceof ZodNullable ||
-        fieldSchema instanceof ZodDefault
+  for (const key in shape) {
+    const fieldSchema = unwrapSchema(shape[key]);
+    const raw = formData[key];
+    // Missing field -> skip (leave undefined)
+    if (raw === null) {
+      continue;
+    }
+    // Handle string values
+    if (typeof raw === "string") {
+      // Empty string -> null for string or number types
+      if (
+        raw === "" &&
+        (fieldSchema instanceof z.ZodString ||
+          fieldSchema instanceof z.ZodNumber)
       ) {
-        fieldSchema = fieldSchema.unwrap();
-      }
-
-      if (fieldSchema instanceof ZodNumber) {
-        out[key] = coerceNumber(val);
-      } else if (fieldSchema instanceof ZodBoolean) {
-        out[key] = coerceBoolean(val);
-      } else if (fieldSchema instanceof ZodString) {
-        out[key] = coerceString(val);
-      } else if (fieldSchema instanceof ZodDate) {
-        out[key] = coerceTimestamp(val);
+        result[key as keyof z.input<T>] = null as z.input<T>[keyof z.input<T>];
+        continue;
+      } else if (fieldSchema instanceof z.ZodNumber) {
+        // Number coercion
+        const parsed = Number(raw);
+        result[key as keyof z.input<T>] = (
+          Number.isNaN(parsed) ? raw : parsed
+        ) as z.input<T>[keyof z.input<T>];
+      } else if (fieldSchema instanceof z.ZodBoolean) {
+        // Boolean coercion
+        if (raw === "") {
+          result[key as keyof z.input<T>] =
+            null as z.input<T>[keyof z.input<T>];
+        } else {
+          const parsed = z.stringbool().safeParse(raw);
+          if (parsed.success) {
+            result[key as keyof z.input<T>] =
+              parsed.data as z.input<T>[keyof z.input<T>];
+          } else {
+            result[key as keyof z.input<T>] =
+              raw as z.input<T>[keyof z.input<T>];
+          }
+        }
       } else {
-        out[key] = val; // enums, objects, etc.
+        // String or other types
+        result[key as keyof z.input<T>] = raw as z.input<T>[keyof z.input<T>];
       }
+    } else {
+      // File (Blob)
+      result[key as keyof z.input<T>] = raw as z.input<T>[keyof z.input<T>];
     }
+  }
 
-    return out;
-  };
+  return result;
 };
-
-export const makeApiSchema = <T extends $ZodObject>(schema: T) => {
-  const rawStrict = makeRawSchema(schema);
-  const coerced = rawStrict.transform(makeTransformFn(schema));
-  return coerced.pipe(schema as any);
-};
-
-const isRecord = (x: unknown): x is Record<string, unknown> =>
-  typeof x === "object" && x !== null;
 
 /**
- * Core payload parser: given an unknown raw object and a list of
- * { schema, dummy } candidates, try each one in turn.
+ * Parses data with dummy defaults to satisfy required schema fields, then strips out dummy fields
+ * that weren't present in the original data.
+ *
+ * @param schema - The Zod schema to parse against.
+ * @param data - The partial data to validate.
+ * @param dummy - A record of dummy values to temporarily satisfy the schema.
+ * @returns The parsed data with dummy-only fields removed.
  */
-const parsePayload = <T extends ZodType>(
-  raw: unknown,
+export function parseWithDummy<T extends z.ZodObject>(
   schema: T,
+  data: Partial<z.input<T>>,
   dummy?: Partial<z.input<T>>
-): z.output<T> => {
-  if (!isRecord(raw)) {
-    throw new Error("Payload must be an object");
-  }
-  const input = { ...raw };
-
-  // merge in only those dummy fields that are truly missing or undefined
-  const merged: Record<string, unknown> = { ...input };
-  if (dummy) {
+): Partial<z.output<T>> {
+  // Merge dummy and data (data overrides dummy)
+  const merged = { ...dummy, ...data };
+  // Validate merged data
+  const parsed = schema.parse(merged) as Record<string, unknown>;
+  // Remove dummy fields not present in original data
+  if (dummy != null) {
     for (const key of Object.keys(dummy)) {
-      if (!(key in merged) || merged[key] === undefined) {
-        merged[key] = dummy[key as keyof typeof dummy];
+      if (!data.hasOwnProperty(key)) {
+        delete parsed[key];
       }
     }
   }
-
-  // just parse
-  const parsed = z.parse(schema, merged);
-
-  // strip back out any dummy fields we injected
-  if (dummy) {
-    for (const key of Object.keys(dummy) as (keyof T)[]) {
-      if (!(key in raw) || (raw as any)[key] === undefined) {
-        delete (parsed as any)[key];
-      }
-    }
-  }
-
-  return parsed;
-};
-
-/**
- * For multipart/form-data requests: pull out the File entries,
- * build a plain object of the other fields, then parse.
- */
-export const parseFormPayload = <T extends ZodType>(
-  form: Record<string, unknown>,
-  schema: T,
-  dummy?: Partial<z.input<T>>
-): z.output<T> => {
-  const rawObj: Record<string, unknown> = {};
-  for (const [key, val] of Object.entries(form)) {
-    if (val instanceof File) continue;
-    rawObj[key] = val;
-  }
-  return parsePayload(rawObj, schema, dummy);
-};
-
-/**
- * For JSON requests: just pass through to parsePayload.
- */
-export const parseJsonPayload = <T extends ZodType>(
-  jsonData: unknown,
-  schema: T,
-  dummy?: Partial<z.input<T>>
-): z.output<T> => parsePayload(jsonData, schema, dummy);
+  return parsed as Partial<z.output<T>>;
+}

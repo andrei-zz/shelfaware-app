@@ -3,6 +3,7 @@ import type { Route } from "./+types/route";
 import { useFetcher } from "react-router";
 import { DateTime } from "luxon";
 
+import { authenticate } from "~/actions/auth.server";
 import {
   getImages,
   getItem,
@@ -19,7 +20,6 @@ import { ItemTypeField } from "~/components/form/item-type-field";
 import { SubmitButton } from "~/components/form/submit-button";
 import { Field } from "~/components/form/field";
 import { CheckboxField } from "~/components/form/checkbox-field";
-import { authenticate } from "~/actions/auth.server";
 
 export const meta = ({ params }: Route.MetaArgs) => {
   return [
@@ -32,9 +32,7 @@ export const meta = ({ params }: Route.MetaArgs) => {
   ];
 };
 
-export const loader = async ({ request, params }: Route.LoaderArgs) => {
-  await authenticate(request, request.url);
-
+export const loader = async ({ params }: Route.LoaderArgs) => {
   const item = await getItem(Number(params.itemId));
   const tags = await getTagsWithRawItems();
   const images = await getImages();
@@ -156,6 +154,13 @@ export default ({ params, loaderData }: Route.ComponentProps) => {
             }
             label="Expiration date"
             fieldErrors={fetcher.data?.errors?.expireAt}
+          />
+          <Field
+            type="number"
+            name="originalWeight"
+            label="Original weight (in grams)"
+            defaultValue={loaderData.item?.originalWeight ?? undefined}
+            fieldErrors={fetcher.data?.errors?.originalWeight}
           />
           <Field
             type="number"

@@ -5,9 +5,25 @@ import { z } from "zod/v4";
 import { createTag, createTagSchema } from "~/actions/insert.server";
 import { getTag, getTagByItemId, getTagByUid } from "~/actions/select.server";
 import { updateTag, updateTagSchema } from "~/actions/update.server";
-import { makeApiSchema } from "~/actions/zod-utils";
+import { coerceFormData } from "~/actions/zod-utils";
 
 const PATHNAME = "/api/tag";
+
+const patchSchema = updateTagSchema.check((ctx) => {
+  if (ctx.value.id == null && ctx.value.uid == null) {
+    ctx.issues.push({
+      input: ctx.value.id,
+      code: "custom",
+      message: "Either id or uid must be provided",
+    });
+    ctx.issues.push({
+      input: ctx.value.uid,
+      code: "custom",
+      message: "Either uid or id must be provided",
+    });
+  }
+});
+
 export const loader = async ({ request }: Route.LoaderArgs) => {
   let relativeUrl: string = PATHNAME;
   let id: string | null;
@@ -81,7 +97,23 @@ export const action = async ({ request }: Route.ActionArgs) => {
       request.headers.get("content-type");
     if (reqContentType?.startsWith("multipart/form-data")) {
       const reqFormData = await request.formData();
-      payload = Object.fromEntries(reqFormData);
+      const formData = Object.fromEntries(reqFormData);
+      payload =
+        request.method === "POST"
+          ? coerceFormData(createTagSchema, {
+              ...formData,
+              uid:
+                typeof formData.uid === "string"
+                  ? formData.uid.replace(/\s+/g, "").toLowerCase()
+                  : formData.uid,
+            })
+          : coerceFormData(patchSchema, {
+              ...formData,
+              uid:
+                typeof formData.uid === "string"
+                  ? formData.uid.replace(/\s+/g, "").toLowerCase()
+                  : formData.uid,
+            });
     } else if (reqContentType?.startsWith("application/json")) {
       payload = await request.json();
     } else {
@@ -97,13 +129,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   try {
     switch (request.method) {
       case "POST": {
-        const parsed = makeApiSchema(createTagSchema).parse({
-          ...payload,
-          uid:
-            typeof payload.uid === "string"
-              ? payload.uid.replace(/\s+/g, "").toLowerCase()
-              : payload.uid,
-        });
+        const parsed = createTagSchema.parse(payload);
         const newTag = await createTag(parsed);
         return Response.json(newTag, {
           status: 201,
@@ -113,28 +139,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
         });
       }
       case "PATCH": {
-        const parsed = makeApiSchema(updateTagSchema)
-          .superRefine((data, ctx) => {
-            if (data.id == null && data.uid == null) {
-              ctx.addIssue({
-                path: ["id"],
-                message: "Either id or uid must be provided",
-                code: z.ZodIssueCode.custom,
-              });
-              ctx.addIssue({
-                path: ["uid"],
-                message: "Either uid or id must be provided",
-                code: z.ZodIssueCode.custom,
-              });
-            }
-          })
-          .parse({
-            ...payload,
-            uid:
-              typeof payload.uid === "string"
-                ? payload.uid.replace(/\s+/g, "").toLowerCase()
-                : payload.uid,
-          });
+        const parsed = patchSchema.parse(payload);
         const updatedTag = await updateTag(parsed);
         return Response.json(updatedTag, {
           status: 200,
@@ -155,7 +160,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
     if (err instanceof z.ZodError) {
       return Response.json(
-        { message: "Bad Request", errors: err.flatten().fieldErrors },
+        { message: "Bad Request", errors: z.flattenError(err).fieldErrors },
         {
           status: 400,
           headers: { "Content-Type": "application/json" },

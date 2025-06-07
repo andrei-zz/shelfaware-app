@@ -3,6 +3,7 @@ import type { Route } from "./+types/route";
 import { useFetcher } from "react-router";
 import { DateTime } from "luxon";
 
+import { authenticate } from "~/actions/auth.server";
 import { getImage, getImages } from "~/actions/select.server";
 
 import { Main } from "~/components/main";
@@ -10,7 +11,6 @@ import { Form } from "~/components/form/form";
 import { Field } from "~/components/form/field";
 import { ImageField } from "~/components/form/image-field";
 import { SubmitButton } from "~/components/form/submit-button";
-import { authenticate } from "~/actions/auth.server";
 
 export const meta = ({ params }: Route.MetaArgs) => {
   return [
@@ -23,9 +23,7 @@ export const meta = ({ params }: Route.MetaArgs) => {
   ];
 };
 
-export const loader = async ({ request, params }: Route.LoaderArgs) => {
-  await authenticate(request, request.url);
-
+export const loader = async ({ params }: Route.LoaderArgs) => {
   const image = await getImage(Number(params.imageId));
   const images = await getImages();
   return { image, images };
@@ -104,7 +102,6 @@ export default ({ params, loaderData }: Route.ComponentProps) => {
             fieldErrors={fetcher.data?.errors?.id}
           />
           <Field
-            type="number"
             name="title"
             label="Title"
             defaultValue={loaderData.image?.title ?? undefined}

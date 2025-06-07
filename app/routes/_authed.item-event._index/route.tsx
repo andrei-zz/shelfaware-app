@@ -4,7 +4,6 @@ import { getItemEvents } from "~/actions/select.server";
 
 import { Main } from "~/components/main";
 import { ItemEventItem } from "~/components/item-event-item";
-import { authenticate } from "~/actions/auth.server";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -13,9 +12,7 @@ export const meta = ({}: Route.MetaArgs) => {
   ];
 };
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-  await authenticate(request, request.url);
-
+export const loader = async ({}: Route.LoaderArgs) => {
   const itemEvents = await getItemEvents();
   return { itemEvents };
 };

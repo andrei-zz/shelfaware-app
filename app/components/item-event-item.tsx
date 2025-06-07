@@ -54,7 +54,7 @@ export const ItemEventItem = ({
       className="p-2 no-underline"
     >
       <NavLink
-        to={`/item-event/${itemEvent.id}`}
+        to={`/item/${itemEvent.item.id}`}
         className={({ isPending }) =>
           cn(
             "p-2 flex items-center space-x-2 rounded hover:bg-accent border no-underline",

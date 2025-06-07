@@ -4,7 +4,6 @@ import { getImages } from "~/actions/select.server";
 
 import { Main } from "~/components/main";
 import { ImageItem } from "~/components/image-item";
-import { authenticate } from "~/actions/auth.server";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -13,9 +12,7 @@ export const meta = ({}: Route.MetaArgs) => {
   ];
 };
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-  await authenticate(request, request.url);
-
+export const loader = async ({}: Route.LoaderArgs) => {
   const images = await getImages();
   return { images };
 };

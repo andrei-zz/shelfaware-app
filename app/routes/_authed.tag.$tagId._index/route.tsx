@@ -3,6 +3,7 @@ import type { Route } from "./+types/route";
 import { useFetcher } from "react-router";
 import { DateTime } from "luxon";
 
+import { authenticate } from "~/actions/auth.server";
 import { getItems, getTag } from "~/actions/select.server";
 
 import { Main } from "~/components/main";
@@ -11,7 +12,6 @@ import { Field } from "~/components/form/field";
 import { SelectItem } from "~/components/ui/select";
 import { ItemField } from "~/components/form/item-field";
 import { SubmitButton } from "~/components/form/submit-button";
-import { authenticate } from "~/actions/auth.server";
 
 export const meta = ({ params }: Route.MetaArgs) => {
   return [
@@ -22,9 +22,7 @@ export const meta = ({ params }: Route.MetaArgs) => {
   ];
 };
 
-export const loader = async ({ request, params }: Route.LoaderArgs) => {
-  await authenticate(request, request.url);
-
+export const loader = async ({ params }: Route.LoaderArgs) => {
   const tag = await getTag(Number(params.tagId));
   const items = await getItems();
   return { tag, items };

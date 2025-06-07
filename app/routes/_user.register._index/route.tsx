@@ -1,14 +1,16 @@
 import type { Route } from "./+types/route";
 
 import { data, redirect, useFetcher } from "react-router";
+import { z } from "zod/v4";
+
 import { hashPassword, sessionStorage } from "~/actions/auth.server";
+import { coerceFormData, parseWithDummy } from "~/actions/zod-utils";
+import { createUser, createUserSchema } from "~/actions/insert.server";
+import { uploadImage } from "~/actions/image.server";
+
 import { Main } from "~/components/main";
 import { AuthForm } from "~/components/auth-form";
 import { FieldError } from "~/components/form/field-error";
-import { makeApiSchema, parseFormPayload } from "~/actions/zod-utils";
-import { createUser, createUserSchema } from "~/actions/insert.server";
-import { ZodError } from "zod/v4";
-import { uploadImage } from "~/actions/image.server";
 
 const PATHNAME = "/register";
 
@@ -69,15 +71,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
       dummy.avatarImageId = 0;
     }
 
-    payload = parseFormPayload(
-      formData,
-      makeApiSchema(createUserSchema),
-      dummy
-    );
+    const coercedFormData = coerceFormData(createUserSchema, formData);
+    payload = parseWithDummy(createUserSchema, coercedFormData, dummy);
   } catch (err: unknown) {
-    if (err instanceof ZodError) {
+    if (err instanceof z.ZodError) {
       return Response.json(
-        { message: "Bad Request", errors: err.flatten().fieldErrors },
+        { message: "Bad Request", errors: z.flattenError(err).fieldErrors },
         {
           status: 400,
           headers: { "Content-Type": "application/json" },
@@ -95,7 +94,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
     return new Response("Password is required", { status: 400 });
   }
 
-  const avatarImage = await uploadImage(avatarImageFile);
+  const avatarImage = await uploadImage(avatarImageFile, { type: "avatar" });
   payload.avatarImageId = avatarImage?.id;
   if (avatarImageFile != null && !payload.avatarImageId) {
     return new Response("Invalid image file", { status: 400 });
@@ -104,7 +103,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   try {
     const passwordHash = await hashPassword(password);
 
-    const parsed = makeApiSchema(createUserSchema).parse({
+    const parsed = createUserSchema.parse({
       ...payload,
       passwordHash,
     });
@@ -131,10 +130,10 @@ export const action = async ({ request }: Route.ActionArgs) => {
     //   },
     // });
   } catch (err: unknown) {
-    if (err instanceof ZodError) {
+    if (err instanceof z.ZodError) {
       console.log("Should have caught this zod error earilier", err);
       return Response.json(
-        { message: "Bad Request", errors: err.flatten().fieldErrors },
+        { message: "Bad Request", errors: z.flattenError(err).fieldErrors },
         {
           status: 400,
           headers: { "Content-Type": "application/json" },

@@ -2,6 +2,7 @@ import type { Route } from "./+types/route";
 
 import { redirect, useFetcher } from "react-router";
 
+import { authenticate } from "~/actions/auth.server";
 import { eventTypeEnum } from "~/database/schema";
 import { getImages, getItems } from "~/actions/select.server";
 
@@ -16,7 +17,6 @@ import { ItemField } from "~/components/form/item-field";
 import { ItemEventType } from "~/components/item-event-type";
 import { FieldError } from "~/components/form/field-error";
 import { SubmitButton } from "~/components/form/submit-button";
-import { authenticate } from "~/actions/auth.server";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -25,9 +25,7 @@ export const meta = ({}: Route.MetaArgs) => {
   ];
 };
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-  await authenticate(request, request.url);
-
+export const loader = async ({}: Route.LoaderArgs) => {
   const items = await getItems();
   const images = await getImages();
   return { items, images };

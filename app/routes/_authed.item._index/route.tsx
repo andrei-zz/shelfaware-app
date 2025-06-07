@@ -1,4 +1,3 @@
-import { authenticate } from "~/actions/auth.server";
 import type { Route } from "./+types/route";
 
 import { loaderSchema } from "./zod-schema";
@@ -21,8 +20,6 @@ export const meta = ({}: Route.MetaArgs) => {
 // }
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
-  await authenticate(request, request.url);
-
   const url = new URL(request.url);
   const raw: unknown = Object.fromEntries(url.searchParams);
 

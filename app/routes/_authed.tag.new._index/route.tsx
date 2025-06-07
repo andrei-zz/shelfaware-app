@@ -2,6 +2,7 @@ import type { Route } from "./+types/route";
 
 import { redirect, useFetcher } from "react-router";
 
+import { authenticate } from "~/actions/auth.server";
 import { getItems } from "~/actions/select.server";
 
 import { Main } from "~/components/main";
@@ -9,7 +10,6 @@ import { Form } from "~/components/form/form";
 import { Field } from "~/components/form/field";
 import { ItemField } from "~/components/form/item-field";
 import { SubmitButton } from "~/components/form/submit-button";
-import { authenticate } from "~/actions/auth.server";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -18,9 +18,7 @@ export const meta = ({}: Route.MetaArgs) => {
   ];
 };
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-  await authenticate(request, request.url);
-
+export const loader = async ({}: Route.LoaderArgs) => {
   const items = await getItems();
   return { items };
 };

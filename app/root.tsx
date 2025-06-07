@@ -27,6 +27,7 @@ import {
   ThemeProvider,
   PreventFlashOnWrongTheme,
   useTheme,
+  Theme,
 } from "remix-themes";
 import { cn } from "./lib/utils";
 
@@ -50,14 +51,19 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   };
 };
 
-const AppLayout = ({ children }: { children: React.ReactNode }) => {
-  const loaderData: Route.ComponentProps["loaderData"] = useLoaderData();
+const AppLayout = ({
+  ssrTheme,
+  children,
+}: {
+  ssrTheme: Theme | null | undefined;
+  children: React.ReactNode;
+}) => {
   const [theme] = useTheme();
 
   return (
     <html
       lang="en"
-      data-theme={theme ?? ""}
+      data-theme={theme ?? Theme.DARK}
       className={cn(
         "scrollbar-thumb-rounded-full scrollbar-thumb-neutral-700 scrollbar-track-neutral-200 scrollbar-hover:scrollbar-thumb-neutral-700/80 scrollbar-active:scrollbar-thumb-neutral-700/70",
         theme
@@ -67,10 +73,10 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
-        <PreventFlashOnWrongTheme ssrTheme={Boolean(loaderData?.theme)} />
+        <PreventFlashOnWrongTheme ssrTheme={Boolean(ssrTheme)} />
         <Links />
       </head>
-      <body className="overflow-hidden antialiased bg-background text-foreground min-h-full">
+      <body className="overflow-hidden antialiased bg-background dark:bg-background text-foreground min-h-dvh">
         {children}
         <ScrollRestoration />
         <Scripts />
@@ -79,12 +85,16 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-const Providers = ({ children }: { children: React.ReactNode }) => {
-  const loaderData: Route.ComponentProps["loaderData"] = useLoaderData();
-
+const Providers = ({
+  theme,
+  children,
+}: {
+  theme: Theme | null | undefined;
+  children: React.ReactNode;
+}) => {
   return (
     <ThemeProvider
-      specifiedTheme={loaderData?.theme}
+      specifiedTheme={theme ?? Theme.DARK}
       themeAction="/api/set-theme"
     >
       <TooltipProvider delayDuration={400} skipDelayDuration={300}>
@@ -94,10 +104,10 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export default ({}: Route.ComponentProps) => {
+export default ({ loaderData }: Route.ComponentProps) => {
   return (
-    <Providers>
-      <AppLayout>
+    <Providers theme={loaderData.theme}>
+      <AppLayout ssrTheme={loaderData.theme}>
         <Outlet />
       </AppLayout>
     </Providers>
@@ -106,8 +116,8 @@ export default ({}: Route.ComponentProps) => {
 
 export const HydrateFallback = ({}: Route.HydrateFallbackProps) => {
   return (
-    <Providers>
-      <AppLayout>
+    <Providers theme={Theme.DARK}>
+      <AppLayout ssrTheme={Theme.DARK}>
         <Main>
           <div className="text-9xl font-black">LOADING...</div>
         </Main>
@@ -116,7 +126,10 @@ export const HydrateFallback = ({}: Route.HydrateFallbackProps) => {
   );
 };
 
-export const ErrorBoundary = ({ error }: Route.ErrorBoundaryProps) => {
+export const ErrorBoundary = ({
+  loaderData,
+  error,
+}: Route.ErrorBoundaryProps) => {
   let message = "Oops!";
   let details = "An unexpected error occurred.";
   let stack: string | undefined;
@@ -133,8 +146,8 @@ export const ErrorBoundary = ({ error }: Route.ErrorBoundaryProps) => {
   }
 
   return (
-    <Providers>
-      <AppLayout>
+    <Providers theme={loaderData?.theme}>
+      <AppLayout ssrTheme={loaderData?.theme}>
         <Main className="p-4 pb-16 flex flex-col gap-y-4">
           {message && <h4 className="mb-0">{message}</h4>}
           {details && <p className="mb-0">{details}</p>}

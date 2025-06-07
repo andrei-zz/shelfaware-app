@@ -3,7 +3,6 @@ import type { Route } from "./+types/route";
 import { getTags } from "~/actions/select.server";
 import { TagItem } from "~/components/tag-item";
 import { Main } from "~/components/main";
-import { authenticate } from "~/actions/auth.server";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -18,9 +17,7 @@ export const meta = ({}: Route.MetaArgs) => {
 //   };
 // }
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
-  await authenticate(request, request.url);
-
+export const loader = async ({}: Route.LoaderArgs) => {
   const tags = await getTags();
   return { tags };
 };

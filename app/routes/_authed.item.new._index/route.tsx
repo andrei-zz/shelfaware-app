@@ -1,21 +1,23 @@
 import type { Route } from "./+types/route";
 
 import { redirect, useFetcher } from "react-router";
+
+import { authenticate } from "~/actions/auth.server";
 import {
   getImages,
   getItemTypes,
   getTagsWithRawItems,
 } from "~/actions/select.server";
-import { TagField } from "~/components/form/tag-field";
-import { ImageField } from "~/components/form/image-field";
+
 import { Main } from "~/components/main";
 import { Form } from "~/components/form/form";
+import { Field } from "~/components/form/field";
+import { TagField } from "~/components/form/tag-field";
+import { ImageField } from "~/components/form/image-field";
 import { PositionFieldset } from "~/components/form/position-fieldset";
 import { ItemTypeField } from "~/components/form/item-type-field";
-import { Field } from "~/components/form/field";
 import { CheckboxField } from "~/components/form/checkbox-field";
 import { SubmitButton } from "~/components/form/submit-button";
-import { authenticate } from "~/actions/auth.server";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -25,8 +27,6 @@ export const meta = ({}: Route.MetaArgs) => {
 };
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
-  await authenticate(request, request.url);
-
   const tags = await getTagsWithRawItems();
   const images = await getImages();
   const itemTypes = await getItemTypes();
