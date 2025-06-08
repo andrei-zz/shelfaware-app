@@ -3,7 +3,14 @@ import { createUpdateSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
 import { db } from "~/database/db.server";
-import { images, itemEvents, items, itemTypes, tags } from "~/database/schema";
+import {
+  images,
+  itemEvents,
+  items,
+  itemTypes,
+  tags,
+  users,
+} from "~/database/schema";
 import { createImage } from "./insert.server";
 import { getTags } from "./select.server";
 import type { DrizzleTx } from "./drizzle-utils";
@@ -240,4 +247,21 @@ export const replaceImage = async ({
 
     return newImage;
   });
+};
+
+export const updateUserSchema = createUpdateSchema(users)
+  .omit({
+    createdAt: true,
+    updatedAt: true,
+    deletedAt: true,
+  })
+  .required({ id: true });
+export const updateUser = async ({
+  id,
+  ...data
+}: z.output<typeof updateUserSchema>) => {
+  return await db
+    .update(users)
+    .set({ ...data, updatedAt: sql`now()` })
+    .where(eq(users.id, id));
 };

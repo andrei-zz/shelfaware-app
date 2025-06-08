@@ -27,7 +27,6 @@ export const getInitials = (name: string | null | undefined): string => {
   // Only one word, try to extract two uppercase letters
   const caps = [...trimmed].filter((c) => c >= "A" && c <= "Z");
   if (caps.length >= 2) return caps[0] + caps[1];
-  if (caps.length === 1) return caps[0];
 
   // Fallback: use first two letters of the word
   return trimmed.slice(0, 2).toUpperCase();

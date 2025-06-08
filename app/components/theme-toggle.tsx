@@ -6,10 +6,12 @@ import { CtxMenu } from "./ctx-menu";
 import { Button } from "./ui/button";
 
 export const ThemeToggle = ({
+  asChild,
   children,
   ctxMenuProps,
   ...props
 }: React.ComponentProps<typeof Button> & {
+  asChild?: boolean;
   ctxMenuProps?: React.ComponentProps<typeof CtxMenu>;
 }) => {
   const [theme, setTheme, metadata] = useTheme();
@@ -84,6 +86,7 @@ export const ThemeToggle = ({
       }}
     >
       <Button
+        asChild={asChild}
         variant="outline"
         size="icon"
         {...props}

@@ -7,18 +7,13 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  useLoaderData,
 } from "react-router";
 
 import "./app.css";
 import { TooltipProvider } from "~/components/ui/tooltip";
-import { AppSidebar } from "~/components/sidebar/app-sidebar";
 import {
-  SidebarInset,
   SidebarProvider,
-  SidebarWrapper,
 } from "~/components/ui/sidebar";
-import { SidebarInsetHeader } from "~/components/sidebar/sidebar-inset-header";
 import { Main } from "./components/main";
 import { Pre } from "./components/pre";
 import { Code } from "./components/code";

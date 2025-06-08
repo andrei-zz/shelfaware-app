@@ -4,12 +4,12 @@ import {
   Apple,
   ChevronRight,
   FlagTriangleRight,
-  Image,
+  Image as ImageIcon,
+  LockKeyhole,
   Menu,
-  Moon,
   ScrollText,
-  Sun,
   Tag,
+  UserPen,
   type LucideProps,
 } from "lucide-react";
 
@@ -27,6 +27,7 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
+  sidebarMenuButtonVariants,
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubButton,
@@ -48,6 +49,8 @@ import {
 } from "../ui/card";
 import { DropdownMenuItem } from "../ui/dropdown-menu";
 import type { getUser } from "~/actions/select.server";
+import { Button, buttonVariants } from "../ui/button";
+import { Image } from "../image";
 
 const sidebarItems: {
   title: string;
@@ -69,7 +72,7 @@ const sidebarItems: {
       //   url: "/",
       // },
       {
-        title: "Your Fridge",
+        title: "Items list",
         url: "/item",
       },
       {
@@ -128,7 +131,7 @@ const sidebarItems: {
   },
   {
     title: "Images",
-    icon: Image,
+    icon: ImageIcon,
     url: "/image",
     isActive: true,
     items: [
@@ -261,22 +264,40 @@ export function AppSidebar({
                         "tooltip",
                         "checkbox",
                       ],
+                      dropdownMenuContentProps: {
+                        side: "top",
+                        sideOffset: 12,
+                      },
+                      tooltipContentProps: {
+                        side: "top",
+                        sideOffset: 8,
+                        children: "Toggle theme",
+                      },
                     }}
                     className="bg-transparent"
                   />
                 </CardAction>
               </CardHeader>
               <CardContent className="px-1">
-                <DropdownMenuItem onSelect={() => {}} className="w-full">
-                  Accounts
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => {}} className="w-full">
-                  Accounts
+                <DropdownMenuItem
+                  onSelect={() => navigate("/account")}
+                  className={cn(
+                    buttonVariants({ variant: "link", size: "default" }),
+                    "w-full justify-start"
+                  )}
+                >
+                  <UserPen /> Account
                 </DropdownMenuItem>
               </CardContent>
               <CardFooter className="px-1">
-                <DropdownMenuItem onSelect={() => navigate("/logout")} className="w-full">
-                  Logout
+                <DropdownMenuItem
+                  onSelect={() => navigate("/logout")}
+                  className={cn(
+                    buttonVariants({ variant: "link", size: "default" }),
+                    "w-full justify-start"
+                  )}
+                >
+                  <LockKeyhole /> Logout
                 </DropdownMenuItem>
               </CardFooter>
             </Card>
@@ -286,20 +307,36 @@ export function AppSidebar({
             children: "Open menu",
           }}
         >
-          <SidebarMenuButton
+          <Button
+            variant="ghost"
             size="lg"
-            className="justify-between data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            className={cn(
+              sidebarMenuButtonVariants({
+                variant: "default",
+                size: "default",
+              }),
+              "flex w-full items-center gap-2 px-2! py-2! min-h-fit justify-between data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            )}
           >
-            <div className="flex w-full items-center gap-2">
-              <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                {getInitials(user?.name ?? user?.email.split("@")[0])}
-              </div>
+            <div className="flex items-center gap-2">
+              {user?.avatar?.id ? (
+                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-10 items-center justify-center rounded-lg overflow-hidden">
+                  <Image
+                    src={`/api/image?id=${user.avatar.id}`}
+                    containerProps={{ className: "size-10" }}
+                  />
+                </div>
+              ) : (
+                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-9 items-center justify-center rounded-lg">
+                  {getInitials(user?.name ?? user?.email.split("@")[0])}
+                </div>
+              )}
               <div className="flex flex-col gap-0.5 leading-none">
                 <span className="font-medium">{user?.name ?? user?.email}</span>
               </div>
             </div>
             <Menu />
-          </SidebarMenuButton>
+          </Button>
         </CtxMenu>
       </SidebarFooter>
       <SidebarRail />

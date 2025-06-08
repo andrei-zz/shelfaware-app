@@ -1,7 +1,9 @@
 import type { Route } from "./+types/route";
 
 import { redirect, useFetcher } from "react-router";
+import { ne } from "drizzle-orm";
 
+import { images as imagesTable } from "~/database/schema";
 import { authenticate } from "~/actions/auth.server";
 import {
   getImages,
@@ -26,9 +28,9 @@ export const meta = ({}: Route.MetaArgs) => {
   ];
 };
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
+export const loader = async ({}: Route.LoaderArgs) => {
   const tags = await getTagsWithRawItems();
-  const images = await getImages();
+  const images = await getImages([ne(imagesTable.type, "avatar")]);
   const itemTypes = await getItemTypes();
 
   return { tags, images, itemTypes };

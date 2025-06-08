@@ -137,28 +137,36 @@ export default ({ params, loaderData }: Route.ComponentProps) => {
             fieldErrors={fetcher.data?.errors?.itemId}
           />
           <Field
-            type="date"
+            type="datetime-local"
             id="createdAt"
             readOnly
             disabled
             defaultValue={
               loaderData.tag?.createdAt != null
-                ? DateTime.fromMillis(loaderData.tag?.createdAt).toISODate() ??
-                  undefined
+                ? DateTime.fromMillis(
+                    Math.round(loaderData.tag.createdAt / 1000) * 1000
+                  ).toISO({
+                    includeOffset: false,
+                    suppressMilliseconds: true,
+                  }) ?? undefined
                 : undefined
             }
             label="Tag creation date"
             fieldErrors={fetcher.data?.errors?.createdAt}
           />
           <Field
-            type="date"
+            type="datetime-local"
             id="attachedAt"
             readOnly
             disabled
             defaultValue={
               loaderData.tag?.attachedAt != null
-                ? DateTime.fromMillis(loaderData.tag?.attachedAt).toISODate() ??
-                  undefined
+                ? DateTime.fromMillis(
+                    Math.round(loaderData.tag.attachedAt / 1000) * 1000
+                  ).toISO({
+                    includeOffset: false,
+                    suppressMilliseconds: true,
+                  }) ?? undefined
                 : undefined
             }
             label="Attached date"

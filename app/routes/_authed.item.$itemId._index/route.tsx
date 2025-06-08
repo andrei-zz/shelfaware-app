@@ -1,8 +1,10 @@
 import type { Route } from "./+types/route";
 
 import { useFetcher } from "react-router";
+import { ne } from "drizzle-orm";
 import { DateTime } from "luxon";
 
+import { images as imagesTable } from "~/database/schema";
 import { authenticate } from "~/actions/auth.server";
 import {
   getImages,
@@ -35,7 +37,7 @@ export const meta = ({ params }: Route.MetaArgs) => {
 export const loader = async ({ params }: Route.LoaderArgs) => {
   const item = await getItem(Number(params.itemId));
   const tags = await getTagsWithRawItems();
-  const images = await getImages();
+  const images = await getImages([ne(imagesTable.type, "avatar")]);
   const itemTypes = await getItemTypes();
 
   return { item, tags, images, itemTypes };
@@ -187,28 +189,36 @@ export default ({ params, loaderData }: Route.ComponentProps) => {
             colFieldErrors={fetcher.data?.errors?.col}
           />
           <Field
-            type="date"
+            type="datetime-local"
             id="createdAt"
             readOnly
             disabled
             defaultValue={
               loaderData.item?.createdAt != null
-                ? DateTime.fromMillis(loaderData.item?.createdAt).toISODate() ??
-                  undefined
+                ? DateTime.fromMillis(
+                    Math.round(loaderData.item.createdAt / 1000) * 1000
+                  ).toISO({
+                    includeOffset: false,
+                    suppressMilliseconds: true,
+                  }) ?? undefined
                 : undefined
             }
             label="Item creation date"
             fieldErrors={fetcher.data?.errors?.createdAt}
           />
           <Field
-            type="date"
+            type="datetime-local"
             id="updatedAt"
             readOnly
             disabled
             defaultValue={
               loaderData.item?.updatedAt != null
-                ? DateTime.fromMillis(loaderData.item?.updatedAt).toISODate() ??
-                  undefined
+                ? DateTime.fromMillis(
+                    Math.round(loaderData.item.updatedAt / 1000) * 1000
+                  ).toISO({
+                    includeOffset: false,
+                    suppressMilliseconds: true,
+                  }) ?? undefined
                 : undefined
             }
             label="Last updated date"

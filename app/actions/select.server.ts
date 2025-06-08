@@ -533,6 +533,14 @@ export const getUser = async (userId: string) =>
     columns: {
       passwordHash: false,
     },
+    with: {
+      avatar: true,
+      apiKeys: {
+        columns: {
+          keyHash: false,
+        },
+      },
+    },
     where: eq(users.id, userId),
   });
 
@@ -547,6 +555,14 @@ export const getUserByEmail = async (userEmail: string) =>
   await db.query.users.findFirst({
     columns: {
       passwordHash: false,
+    },
+    with: {
+      avatar: true,
+      apiKeys: {
+        columns: {
+          keyHash: false,
+        },
+      },
     },
     where: eq(users.email, userEmail),
   });

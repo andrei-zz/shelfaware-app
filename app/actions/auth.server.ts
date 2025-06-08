@@ -1,16 +1,16 @@
+import { createCookieSessionStorage, redirect } from "react-router";
 import { Authenticator } from "remix-auth";
 import { FormStrategy } from "remix-auth-form";
-import { createCookieSessionStorage, redirect } from "react-router";
 import argon2 from "argon2";
 
 import type { Resolved } from "~/lib/types";
 import type { users } from "~/database/schema";
-import { getRawUserByEmail } from "./select.server";
+import { getRawUserByEmail } from "~/actions/select.server";
 
 if (!process.env.SESSION_SECRET) {
   throw new Error("SESSION_SECRET is required");
 }
-if (process.env.ARGON2_PEPPER == null) {
+if (!process.env.ARGON2_PEPPER) {
   throw new Error("ARGON2_PEPPER is required");
 }
 
@@ -64,7 +64,7 @@ export const authenticate = async (
   request: Request,
   returnTo?: string,
   redirectTo?: string
-) => {
+): Promise<User> => {
   let session = await sessionStorage.getSession(request.headers.get("cookie"));
   let user = session.get("user");
   if (user) return user;

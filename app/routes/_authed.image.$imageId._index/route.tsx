@@ -1,8 +1,10 @@
 import type { Route } from "./+types/route";
 
 import { useFetcher } from "react-router";
+import { ne } from "drizzle-orm";
 import { DateTime } from "luxon";
 
+import { images as imagesTable } from "~/database/schema";
 import { authenticate } from "~/actions/auth.server";
 import { getImage, getImages } from "~/actions/select.server";
 
@@ -25,7 +27,7 @@ export const meta = ({ params }: Route.MetaArgs) => {
 
 export const loader = async ({ params }: Route.LoaderArgs) => {
   const image = await getImage(Number(params.imageId));
-  const images = await getImages();
+  const images = await getImages([ne(imagesTable.type, "avatar")]);
   return { image, images };
 };
 
@@ -128,30 +130,36 @@ export default ({ params, loaderData }: Route.ComponentProps) => {
             fieldErrors={fetcher.data?.errors?.mimeType}
           />
           <Field
-            type="date"
+            type="datetime-local"
             id="createdAt"
             readOnly
             disabled
             defaultValue={
               loaderData.image?.createdAt != null
                 ? DateTime.fromMillis(
-                    loaderData.image?.createdAt
-                  ).toISODate() ?? undefined
+                    Math.round(loaderData.image.createdAt / 1000) * 1000
+                  ).toISO({
+                    includeOffset: false,
+                    suppressMilliseconds: true,
+                  }) ?? undefined
                 : undefined
             }
             label="Image creation date"
             fieldErrors={fetcher.data?.errors?.createdAt}
           />
           <Field
-            type="date"
+            type="datetime-local"
             id="replacedAt"
             readOnly
             disabled
             defaultValue={
               loaderData.image?.replacedAt != null
                 ? DateTime.fromMillis(
-                    loaderData.image?.replacedAt
-                  ).toISODate() ?? undefined
+                    Math.round(loaderData.image.replacedAt / 1000) * 1000
+                  ).toISO({
+                    includeOffset: false,
+                    suppressMilliseconds: true,
+                  }) ?? undefined
                 : undefined
             }
             label="Replaced date"

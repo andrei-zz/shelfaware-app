@@ -1,9 +1,10 @@
 import type { Route } from "./+types/route";
 
 import { redirect, useFetcher } from "react-router";
+import { ne } from "drizzle-orm";
 
 import { authenticate } from "~/actions/auth.server";
-import { eventTypeEnum } from "~/database/schema";
+import { eventTypeEnum, images as imagesTable } from "~/database/schema";
 import { getImages, getItems } from "~/actions/select.server";
 
 import { Main } from "~/components/main";
@@ -27,7 +28,7 @@ export const meta = ({}: Route.MetaArgs) => {
 
 export const loader = async ({}: Route.LoaderArgs) => {
   const items = await getItems();
-  const images = await getImages();
+  const images = await getImages([ne(imagesTable.type, "avatar")]);
   return { items, images };
 };
 

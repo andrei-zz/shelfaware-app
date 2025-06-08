@@ -4,6 +4,8 @@ import { getImages } from "~/actions/select.server";
 
 import { Main } from "~/components/main";
 import { ImageItem } from "~/components/image-item";
+import { ne } from "drizzle-orm";
+import { images as imagesTable } from "~/database/schema";
 
 export const meta = ({}: Route.MetaArgs) => {
   return [
@@ -13,7 +15,7 @@ export const meta = ({}: Route.MetaArgs) => {
 };
 
 export const loader = async ({}: Route.LoaderArgs) => {
-  const images = await getImages();
+  const images = await getImages([ne(imagesTable.type, "avatar")]);
   return { images };
 };
 

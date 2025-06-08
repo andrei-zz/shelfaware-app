@@ -138,7 +138,7 @@ export const ImageField = ({
           </SelectContent>
         </Select>
       ) : null}
-      {image || (mode === "existing" && imageIdValue) ? (
+      {image || ((mode === "existing" && imageIdValue) || inputImageUrl != null) ? (
         <div className="flex space-x-8">
           {image ? (
             <div className="flex flex-col">

@@ -113,30 +113,36 @@ export default ({ params, loaderData }: Route.ComponentProps) => {
             fieldErrors={fetcher.data?.errors?.description}
           />
           <Field
-            type="date"
+            type="datetime-local"
             id="createdAt"
             readOnly
             disabled
             defaultValue={
               loaderData.itemType?.createdAt != null
                 ? DateTime.fromMillis(
-                    loaderData.itemType?.createdAt
-                  ).toISODate() ?? undefined
+                    Math.round(loaderData.itemType.createdAt / 1000) * 1000
+                  ).toISO({
+                    includeOffset: false,
+                    suppressMilliseconds: true,
+                  }) ?? undefined
                 : undefined
             }
             label="Item type creation date"
             fieldErrors={fetcher.data?.errors?.createdAt}
           />
           <Field
-            type="date"
+            type="datetime-local"
             id="createdAt"
             readOnly
             disabled
             defaultValue={
               loaderData.itemType?.updatedAt != null
                 ? DateTime.fromMillis(
-                    loaderData.itemType?.updatedAt
-                  ).toISODate() ?? undefined
+                    Math.round(loaderData.itemType.updatedAt / 1000) * 1000
+                  ).toISO({
+                    includeOffset: false,
+                    suppressMilliseconds: true,
+                  }) ?? undefined
                 : undefined
             }
             label="Last updated date"

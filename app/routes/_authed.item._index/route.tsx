@@ -33,7 +33,7 @@ export default ({ loaderData }: Route.ComponentProps) => {
       <div className="h-full w-full p-4 pb-16 relative flex flex-col gap-y-4 overflow-y-scroll scrollbar">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h2 className="mt-0 mb-0">Your Fridge</h2>
+            <h2 className="mt-0 mb-0">Items</h2>
           </div>
         </div>
         {Array.isArray(loaderData.items) && loaderData.items.length > 0
