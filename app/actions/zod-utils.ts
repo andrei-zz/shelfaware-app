@@ -124,7 +124,10 @@ export function parseWithDummy<T extends z.ZodObject>(
   dummy?: Partial<z.input<T>>
 ): Partial<z.output<T>> {
   // Merge dummy and data (data overrides dummy)
-  const merged = { ...dummy, ...data };
+  const merged = {
+    ...dummy,
+    ...Object.fromEntries(Object.entries(data).filter(([, v]) => v != null)),
+  };
   // Validate merged data
   const parsed = schema.parse(merged) as Record<string, unknown>;
   // Remove dummy fields not present in original data
@@ -132,6 +135,10 @@ export function parseWithDummy<T extends z.ZodObject>(
     for (const key of Object.keys(dummy)) {
       if (!data.hasOwnProperty(key)) {
         delete parsed[key];
+      } else if (data[key as keyof typeof dummy] === null) {
+        parsed[key] = null;
+      } else if (data[key as keyof typeof dummy] === undefined) {
+        parsed[key] = undefined;
       }
     }
   }

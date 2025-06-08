@@ -62,9 +62,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
     const dummy: Record<string, unknown> = {};
 
-    if (typeof formPassword === "string" && formPassword !== "") {
+    if (typeof formPassword === "string") {
       password = formPassword;
-      dummy.passwordHash = "maximum security password";
+      dummy.passwordHash = crypto.randomUUID();
     }
     if (avatarImage instanceof File) {
       avatarImageFile = avatarImage;
