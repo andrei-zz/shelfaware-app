@@ -1,9 +1,8 @@
-import { NavLink, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { DateTime } from "luxon";
 
 import type { getImages } from "~/actions/select.server";
 
-import { cn } from "~/lib/utils";
 import { useSidebar } from "~/components/ui/sidebar";
 import { Image } from "~/components/image";
 import { CtxMenu } from "~/components/ctx-menu";
@@ -34,14 +33,15 @@ export const ImageItem = ({
       dropdownMenuCheckboxItemProps={{ className: "w-40 px-2" }}
       className="py-2 no-underline w-full h-full flex flex-col items-center space-y-0"
     >
-      <NavLink
+      <Link
         to={`/image/${image.id}`}
-        className={({ isPending }) =>
-          cn(
-            "py-2 flex items-center overflow-x-hidden rounded hover:bg-accent border no-underline",
-            isPending ? "opacity-60  pointer-events-none" : undefined
-          )
-        }
+        className="py-2 flex items-center overflow-x-hidden rounded hover:bg-accent border no-underline"
+        // className={({ isPending }) =>
+        //   cn(
+        //     "py-2 flex items-center overflow-x-hidden rounded hover:bg-accent border no-underline",
+        //     isPending ? "opacity-60  pointer-events-none" : undefined
+        //   )
+        // }
       >
         <Image
           src={`/api/image?id=${image.id}`}
@@ -72,7 +72,7 @@ export const ImageItem = ({
             </span>
           )}
         </div>
-      </NavLink>
+      </Link>
     </CtxMenu>
   );
 };

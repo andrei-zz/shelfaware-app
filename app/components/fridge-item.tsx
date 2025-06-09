@@ -1,10 +1,9 @@
-import { NavLink, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { DateTime } from "luxon";
 import { Tag } from "lucide-react";
 
 import type { getItem } from "~/actions/select.server";
 
-import { cn } from "~/lib/utils";
 import { CtxMenu } from "~/components/ctx-menu";
 import { Image } from "~/components/image";
 import { Badge } from "~/components/ui/badge";
@@ -45,14 +44,15 @@ export const FridgeItem = ({
       dropdownMenuCheckboxItemProps={{ className: "w-40 px-2" }}
       className="p-2 no-underline"
     >
-      <NavLink
+      <Link
         to={`/item/${item.id}`}
-        className={({ isPending }) =>
-          cn(
-            "p-2 flex items-center gap-x-2 rounded hover:bg-accent border no-underline",
-            isPending ? "opacity-60  pointer-events-none" : undefined
-          )
-        }
+        className="p-2 flex items-center gap-x-2 rounded hover:bg-accent border no-underline"
+        // className={({ isPending }) =>
+        //   cn(
+        //     "p-2 flex items-center gap-x-2 rounded hover:bg-accent border no-underline",
+        //     isPending ? "opacity-60  pointer-events-none" : undefined
+        //   )
+        // }
       >
         <Image
           src={
@@ -91,7 +91,7 @@ export const FridgeItem = ({
             </div>
           )}
         </div>
-      </NavLink>
+      </Link>
     </CtxMenu>
   );
 };

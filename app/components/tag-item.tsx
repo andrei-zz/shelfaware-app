@@ -1,10 +1,9 @@
-import { NavLink, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { DateTime } from "luxon";
 import { Paperclip } from "lucide-react";
 
 import type { getTags } from "~/actions/select.server";
 
-import { cn } from "~/lib/utils";
 import { CtxMenu } from "~/components/ctx-menu";
 
 export const TagItem = ({
@@ -35,14 +34,15 @@ export const TagItem = ({
       dropdownMenuCheckboxItemProps={{ className: "w-40 px-2" }}
       className="p-2 no-underline"
     >
-      <NavLink
+      <Link
         to={`/tag/${tag.id}`}
-        className={({ isPending }) =>
-          cn(
-            "p-2 flex items-center space-x-2 rounded hover:bg-accent border no-underline",
-            isPending ? "opacity-60  pointer-events-none" : undefined
-          )
-        }
+        className="p-2 flex items-center space-x-2 rounded hover:bg-accent border no-underline"
+        // className={({ isPending }) =>
+        //   cn(
+        //     "p-2 flex items-center space-x-2 rounded hover:bg-accent border no-underline",
+        //     isPending ? "opacity-60  pointer-events-none" : undefined
+        //   )
+        // }
       >
         <div className="flex flex-col w-full grow">
           <span>{tag.name}</span>
@@ -71,7 +71,7 @@ export const TagItem = ({
             )}
           </div>
         )}
-      </NavLink>
+      </Link>
     </CtxMenu>
   );
 };

@@ -5,15 +5,14 @@ import {
   ChevronRight,
   FlagTriangleRight,
   Image as ImageIcon,
-  LockKeyhole,
-  Menu,
   ScrollText,
   Tag,
-  UserPen,
   type LucideProps,
 } from "lucide-react";
 
-import { cn, getInitials } from "~/lib/utils";
+import type { getUser } from "~/actions/select.server";
+
+import { cn } from "~/lib/utils";
 import {
   Collapsible,
   CollapsibleContent,
@@ -27,7 +26,6 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
-  sidebarMenuButtonVariants,
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubButton,
@@ -36,21 +34,7 @@ import {
   useSidebar,
 } from "~/components/ui/sidebar";
 import { SidebarLink } from "./sidebar-link";
-import { CtxMenu } from "../ctx-menu";
-import { ThemeToggle } from "../theme-toggle";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
-import { DropdownMenuItem } from "../ui/dropdown-menu";
-import type { getUser } from "~/actions/select.server";
-import { Button, buttonVariants } from "../ui/button";
-import { Image } from "../image";
+import { SidebarFooterButton } from "./sidebar-footer-button";
 
 const sidebarItems: {
   title: string;
@@ -243,101 +227,7 @@ export function AppSidebar({
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <CtxMenu
-          features={["click", "tooltip"]}
-          dropdownMenuContentProps={{
-            asChild: true,
-            side: isMobile ? "top" : "right",
-            collisionPadding: 8,
-            sideOffset: 16,
-          }}
-          ctxMenuContent={
-            <Card className="min-w-3xs py-2 gap-2 ">
-              <CardHeader className="px-2 items-center">
-                <CardTitle className="text-xl">Menu</CardTitle>
-                <CardAction className="row-span-1">
-                  <ThemeToggle
-                    ctxMenuProps={{
-                      features: [
-                        "right-click",
-                        "long-press",
-                        "tooltip",
-                        "checkbox",
-                      ],
-                      dropdownMenuContentProps: {
-                        side: "top",
-                        sideOffset: 12,
-                      },
-                      tooltipContentProps: {
-                        side: "top",
-                        sideOffset: 8,
-                        children: "Toggle theme",
-                      },
-                    }}
-                    className="bg-transparent"
-                  />
-                </CardAction>
-              </CardHeader>
-              <CardContent className="px-1">
-                <DropdownMenuItem
-                  onSelect={() => navigate("/account")}
-                  className={cn(
-                    buttonVariants({ variant: "link", size: "default" }),
-                    "w-full justify-start"
-                  )}
-                >
-                  <UserPen /> Account
-                </DropdownMenuItem>
-              </CardContent>
-              <CardFooter className="px-1">
-                <DropdownMenuItem
-                  onSelect={() => navigate("/logout")}
-                  className={cn(
-                    buttonVariants({ variant: "link", size: "default" }),
-                    "w-full justify-start"
-                  )}
-                >
-                  <LockKeyhole /> Logout
-                </DropdownMenuItem>
-              </CardFooter>
-            </Card>
-          }
-          tooltipContentProps={{
-            side: "right",
-            children: "Open menu",
-          }}
-        >
-          <Button
-            variant="ghost"
-            size="lg"
-            className={cn(
-              sidebarMenuButtonVariants({
-                variant: "default",
-                size: "default",
-              }),
-              "flex w-full items-center gap-2 px-2! py-2! min-h-fit justify-between data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            )}
-          >
-            <div className="flex items-center gap-2">
-              {user?.avatar?.id ? (
-                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-10 items-center justify-center rounded-lg overflow-hidden">
-                  <Image
-                    src={`/api/image?id=${user.avatar.id}`}
-                    containerProps={{ className: "size-10" }}
-                  />
-                </div>
-              ) : (
-                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-9 items-center justify-center rounded-lg">
-                  {getInitials(user?.name ?? user?.email.split("@")[0])}
-                </div>
-              )}
-              <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-medium">{user?.name ?? user?.email}</span>
-              </div>
-            </div>
-            <Menu />
-          </Button>
-        </CtxMenu>
+        <SidebarFooterButton user={user} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
