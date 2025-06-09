@@ -54,6 +54,8 @@
     "remix-auth": "^4.2.0",
     "remix-auth-form": "^3.0.0",
     "remix-themes": "^2.0.4",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "tailwind-merge": "^3.3.0",
     "ws": "^8.18.2",
     "zod": "^3.25.56"

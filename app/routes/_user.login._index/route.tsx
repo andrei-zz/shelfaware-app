@@ -5,6 +5,7 @@ import { authenticator, sessionStorage } from "~/actions/auth.server";
 import { Main } from "~/components/main";
 import { AuthForm } from "~/components/auth-form";
 import { FieldError } from "~/components/form/field-error";
+import { Logo } from "~/components/logo";
 
 // Finally, we need to export a loader function to check if the user is already
 // authenticated and redirect them to the dashboard
@@ -66,12 +67,9 @@ export default ({ actionData }: Route.ComponentProps) => {
       <div className="flex h-full w-full max-w-sm flex-col gap-6 justify-center">
         <a
           href="#"
-          className="flex items-center gap-2 self-center font-medium no-underline"
+          className="flex items-center gap-2 self-center font-medium no-underline [&_svg]:fill-white"
         >
-          <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-md">
-            SA
-          </div>
-          <span className="underline">ShelfAware</span>
+          <Logo className="size-36" />
         </a>
         {actionData?.error ? <FieldError>{actionData.error}</FieldError> : null}
         <AuthForm type="login" fetcher={fetcher} />

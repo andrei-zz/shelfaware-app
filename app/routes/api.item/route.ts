@@ -137,8 +137,22 @@ export const action = async ({ request }: Route.ActionArgs) => {
             });
       payload =
         request.method === "POST"
-          ? parseWithDummy(createItemSchema, coercedFormData, dummy)
-          : parseWithDummy(updateItemSchema, coercedFormData, dummy);
+          ? parseWithDummy(
+              createItemSchema,
+              {
+                ...coercedFormData,
+                isPresent: coercedFormData.isPresent ? true : false,
+              },
+              dummy
+            )
+          : parseWithDummy(
+              updateItemSchema,
+              {
+                ...coercedFormData,
+                isPresent: coercedFormData.isPresent ? true : false,
+              },
+              dummy
+            );
     } else if (reqContentType?.startsWith("application/json")) {
       const {
         tagId: jsonTagId,

@@ -82,7 +82,7 @@ export const createItemEvent = async (
 
     const updates: Record<string, unknown> = {};
 
-    if (data.eventType === "in") {
+    if (data.eventType === "in" || data.eventType === "moved") {
       updates.isPresent = true;
       updates.updatedAt = sql`now()`;
     }
@@ -223,5 +223,6 @@ export const createUser = async (data: z.output<typeof createUserSchema>) => {
     .values({ id, ...data })
     .returning()
     .then((value) => value[0]);
+
   return user;
 };

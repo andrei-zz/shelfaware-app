@@ -1,8 +1,10 @@
+import path from "path";
 import express from "express";
+import { createServer } from "http";
+import { Server } from "socket.io";
 import compression from "compression";
 import morgan from "morgan";
 import { globSync } from "glob";
-import path from "path";
 
 // Short-circuit the type-checking of the built output.
 const matches = globSync("./build/server/nodejs_*/index.js");
@@ -16,6 +18,24 @@ const DEVELOPMENT = process.env.NODE_ENV === "development";
 const PORT = Number.parseInt(process.env.PORT || "3000");
 
 const app = express();
+// You need to create the HTTP server from the Express app
+const httpServer = createServer(app);
+// And then attach the socket.io server to the HTTP server
+const io = new Server(httpServer);
+
+// Then you can use `io` to listen the `connection` event and get a socket
+// from a client
+io.on("connection", (socket) => {
+  // from this point you are on the WS connection with a specific client
+  console.log(socket.id, "connected");
+
+  socket.emit("confirmation", "connected!");
+
+  socket.on("event", (data) => {
+    console.log(socket.id, data);
+    socket.emit("event", "pong");
+  });
+});
 
 app.use(compression());
 app.disable("x-powered-by");
@@ -51,6 +71,6 @@ if (DEVELOPMENT) {
 
 app.use(morgan("tiny"));
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });

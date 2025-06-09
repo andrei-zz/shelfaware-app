@@ -11,6 +11,7 @@ import { uploadImage } from "~/actions/image.server";
 import { Main } from "~/components/main";
 import { AuthForm } from "~/components/auth-form";
 import { FieldError } from "~/components/form/field-error";
+import { Logo } from "~/components/logo";
 
 const PATHNAME = "/register";
 
@@ -159,12 +160,9 @@ export default ({ actionData }: Route.ComponentProps) => {
       <div className="flex h-full w-full max-w-sm flex-col gap-6 justify-center">
         <a
           href="#"
-          className="flex items-center gap-2 self-center font-medium no-underline"
+          className="flex items-center gap-2 self-center font-medium no-underline [&_svg]:fill-white"
         >
-          <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-md">
-            SA
-          </div>
-          <span className="underline">ShelfAware</span>
+          <Logo className="size-36" />
         </a>
         {actionData ? <FieldError>{actionData}</FieldError> : null}
         <AuthForm type="register" fetcher={fetcher} />

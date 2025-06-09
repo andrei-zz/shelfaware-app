@@ -36,20 +36,15 @@ export const RouteBreadcrumb = () => {
             </Link>
           </Button>
         </BreadcrumbLink>
-        <BreadcrumbSeparator>
-          <Slash />
-        </BreadcrumbSeparator>
         {pathnames.map((segment, idx, pn) => {
           const path = "/" + pathnames.slice(0, idx + 1).join("/");
           const isLast = idx === pathnames.length - 1;
 
           return (
             <Fragment key={idx}>
-              {idx === 0 || pn.length === 1 ? null : (
-                <BreadcrumbSeparator>
-                  <Slash />
-                </BreadcrumbSeparator>
-              )}
+              <BreadcrumbSeparator>
+                <Slash />
+              </BreadcrumbSeparator>
               <BreadcrumbItem>
                 {isLast ? (
                   <BreadcrumbPage>{segment}</BreadcrumbPage>
