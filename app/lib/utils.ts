@@ -7,14 +7,15 @@ export const cn = (...inputs: ClassValue[]) => {
 
 export const getInitials = (name: string | null | undefined): string => {
   if (name == null) {
-    return "  "
+    return "  ";
   }
 
   const trimmed = name.trim();
-
-  if (trimmed.length === 0) return "";
-
-  if (trimmed.length <= 2) return trimmed.toUpperCase();
+  if (trimmed.length === 0) {
+    return "  ";
+  } else if (trimmed.length <= 2) {
+    return trimmed.toUpperCase();
+  }
 
   const words = trimmed.split(/\s+/).filter((w) => w.length > 0);
 

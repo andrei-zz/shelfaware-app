@@ -18,6 +18,11 @@ export const coerceTimestamp = (val: unknown): number | null | undefined => {
     return null;
   } else if (val === undefined) {
     return undefined;
+  } else if (val instanceof Date) {
+    if (Number.isNaN(val.valueOf())) {
+      throw new Error(`Invalid Date object: ${val}`);
+    }
+    return val.valueOf();
   }
 
   const d =

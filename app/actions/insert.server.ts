@@ -10,6 +10,7 @@ import {
   tags,
   images,
   users,
+  apiKeys,
 } from "~/database/schema";
 import { updateItem } from "./update.server";
 import type { DrizzleTx } from "./drizzle-utils";
@@ -216,9 +217,12 @@ export const createUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
   deletedAt: true,
 });
-export const createUser = async (data: z.output<typeof createUserSchema>) => {
+export const createUser = async (
+  data: z.output<typeof createUserSchema>,
+  tx?: typeof db | DrizzleTx
+) => {
   const id = crypto.randomUUID();
-  const { passwordHash, ...user } = await db
+  const { passwordHash, ...user } = await (tx ?? db)
     .insert(users)
     .values({ id, ...data })
     .returning()
@@ -226,3 +230,20 @@ export const createUser = async (data: z.output<typeof createUserSchema>) => {
 
   return user;
 };
+
+export const createApiKeySchema = createInsertSchema(apiKeys).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  expireAt: true,
+  revokedAt: true,
+});
+export const createApiKey = async (
+  data: z.output<typeof createApiKeySchema>,
+  tx?: typeof db | DrizzleTx
+) =>
+  await (tx ?? db)
+    .insert(apiKeys)
+    .values({ ...data, createdAt: sql`now()` })
+    .returning()
+    .then((value) => value[0]);

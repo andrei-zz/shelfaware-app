@@ -6,6 +6,7 @@ import {
   eq,
   gte,
   inArray,
+  isNull,
   lt,
   lte,
   SQL,
@@ -19,6 +20,7 @@ import {
   tags,
   images,
   users,
+  apiKeys,
 } from "~/database/schema";
 import type { DrizzleTx } from "./drizzle-utils";
 import { createSelectSchema } from "drizzle-zod";
@@ -565,4 +567,28 @@ export const getUserByEmail = async (userEmail: string) =>
       },
     },
     where: eq(users.email, userEmail),
+  });
+
+export const getRawApiKey = async (apiKeyId: number) =>
+  await db
+    .select()
+    .from(apiKeys)
+    .where(eq(apiKeys.id, apiKeyId))
+    .then((value) => value[0]);
+
+export const getApiKey = async (apiKeyId: number) =>
+  await db.query.apiKeys.findFirst({
+    columns: {
+      keyHash: false,
+    },
+    where: eq(apiKeys.id, apiKeyId),
+  });
+
+export const getApiKeysByUserId = async (userId: string) =>
+  await db.query.apiKeys.findMany({
+    columns: {
+      keyHash: false,
+    },
+    where: and(eq(apiKeys.userId, userId), isNull(apiKeys.revokedAt)),
+    orderBy: desc(apiKeys.updatedAt),
   });

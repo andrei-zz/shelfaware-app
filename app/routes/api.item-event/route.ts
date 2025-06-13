@@ -7,7 +7,7 @@ import {
   createItemEvent,
   createItemEventSchema,
 } from "~/actions/insert.server";
-import { getItemByUid, getItemEvent } from "~/actions/select.server";
+import { getItem, getItemByUid, getItemEvent } from "~/actions/select.server";
 import { coerceFormData, parseWithDummy, uidSchema } from "~/actions/zod-utils";
 import { MAX_IMAGE_FILE_SIZE, uploadImage } from "~/actions/image.server";
 
@@ -70,7 +70,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   }
 };
 
-export const action = async ({ request }: Route.ActionArgs) => {
+export const action = async ({ request, context }: Route.ActionArgs) => {
   let relativeUrl: string = PATHNAME;
   try {
     const url = new URL(request.url);
@@ -145,6 +145,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
         const itemEventPayload = postSchema.parse(payload);
 
         let itemId: number;
+        let newItem: Awaited<ReturnType<typeof getItem>> | null = null;
         if (itemEventPayload.itemId != null) {
           itemId = itemEventPayload.itemId;
         } else {
@@ -152,11 +153,12 @@ export const action = async ({ request }: Route.ActionArgs) => {
           if (item != null) {
             itemId = item.id;
           } else {
-            const { item: newItem } = await createItemAndTagByUid({
+            const { item: createdItem } = await createItemAndTagByUid({
               ...itemEventPayload,
               uid: itemEventPayload.uid!,
             });
-            itemId = newItem.id;
+            itemId = createdItem.id;
+            newItem = await getItem(itemId);
           }
         }
 
@@ -165,6 +167,17 @@ export const action = async ({ request }: Route.ActionArgs) => {
           itemId,
         });
         const newItemEvent = await createItemEvent(parsed);
+
+        const io = context.io;
+        if (!io) {
+          console.log("serverIO is uninitialized");
+        }
+
+        io?.emit("item-event", {
+          itemEvent: newItemEvent,
+          item: newItem,
+        });
+
         return Response.json(newItemEvent, {
           status: 201,
           headers: {

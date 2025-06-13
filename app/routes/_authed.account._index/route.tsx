@@ -6,7 +6,7 @@ import { z } from "zod/v4";
 import { DateTime } from "luxon";
 
 import { images as imagesTable } from "~/database/schema";
-import { authenticate, hashPassword } from "~/actions/auth.server";
+import { authenticate, hashString } from "~/actions/auth.server";
 import { getImages, getUser } from "~/actions/select.server";
 import { updateUser, updateUserSchema } from "~/actions/update.server";
 import { MAX_IMAGE_FILE_SIZE, uploadImage } from "~/actions/image.server";
@@ -101,7 +101,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   }
 
   try {
-    const passwordHash = password ? await hashPassword(password) : undefined;
+    const passwordHash = password ? await hashString(password) : undefined;
 
     const parsed = updateUserSchema.parse({
       ...payload,

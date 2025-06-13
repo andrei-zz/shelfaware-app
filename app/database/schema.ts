@@ -261,12 +261,18 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 
 export const apiKeys = pgTable("api_keys", {
   id: serial("id").primaryKey(),
-  userId: uuid("user_id").references(() => users.id, {
-    onDelete: "cascade",
-  }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, {
+      onDelete: "cascade",
+    }),
+  prefix: text("prefix").notNull(),
   keyHash: text("key_hash").notNull(),
   name: text("name"),
   createdAt: unixTimestamp("created_at")
+    .notNull()
+    .default(sql`now()`),
+  updatedAt: unixTimestamp("created_at")
     .notNull()
     .default(sql`now()`),
   revokedAt: unixTimestamp("revoked_at"),

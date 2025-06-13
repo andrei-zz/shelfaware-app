@@ -2,7 +2,7 @@ import type { Route } from "./+types/route";
 
 import { loaderSchema } from "./zod-schema";
 
-import { getPresentItems } from "~/actions/select.server";
+import { getItems } from "~/actions/select.server";
 
 import { FridgeItem } from "~/components/fridge-item";
 import { Main } from "~/components/main";
@@ -24,7 +24,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   const url = new URL(request.url);
   const raw: unknown = Object.fromEntries(url.searchParams);
 
-  const items = await getPresentItems();
+  const items = await getItems();
   return { items };
 };
 

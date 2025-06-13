@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 
 import { db } from "~/database/db.server";
 import {
+  apiKeys,
   images,
   itemEvents,
   items,
@@ -259,9 +260,31 @@ export const updateUserSchema = createUpdateSchema(users)
 export const updateUser = async ({
   id,
   ...data
-}: z.output<typeof updateUserSchema>) => {
-  return await db
+}: z.output<typeof updateUserSchema>) =>
+  await db
     .update(users)
     .set({ ...data, updatedAt: sql`now()` })
     .where(eq(users.id, id));
-};
+
+export const updateApiKeySchema = createUpdateSchema(apiKeys)
+  .omit({
+    userId: true,
+    createdAt: true,
+    updatedAt: true,
+    revokedAt: true,
+  })
+  .required({ id: true });
+export const updateApiKey = async ({
+  id,
+  ...data
+}: z.output<typeof updateApiKeySchema>) =>
+  await db
+    .update(apiKeys)
+    .set({ ...data, updatedAt: sql`now()` })
+    .where(eq(apiKeys.id, id));
+
+export const revokeApiKey = async (apiKeyId: number) =>
+  await db
+    .update(apiKeys)
+    .set({ updatedAt: sql`now()`, revokedAt: sql`now()` })
+    .where(eq(apiKeys.id, apiKeyId));

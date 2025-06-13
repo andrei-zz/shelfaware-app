@@ -65,12 +65,7 @@ export default ({ actionData }: Route.ComponentProps) => {
   return (
     <Main className="h-dvh max-h-dvh flex flex-col items-center justify-center">
       <div className="flex h-full w-full max-w-sm flex-col gap-6 justify-center">
-        <a
-          href="#"
-          className="flex items-center gap-2 self-center font-medium no-underline [&_svg]:fill-white"
-        >
-          <Logo className="size-36" />
-        </a>
+          <Logo className="size-36 fill-foreground" />
         {actionData?.error ? <FieldError>{actionData.error}</FieldError> : null}
         <AuthForm type="login" fetcher={fetcher} />
       </div>

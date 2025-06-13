@@ -1,10 +1,10 @@
 import path from "path";
 import express from "express";
 import { createServer } from "http";
-import { Server } from "socket.io";
 import compression from "compression";
 import morgan from "morgan";
 import { globSync } from "glob";
+import { Server } from "socket.io";
 
 // Short-circuit the type-checking of the built output.
 const matches = globSync("./build/server/nodejs_*/index.js");
@@ -31,11 +31,17 @@ io.on("connection", (socket) => {
 
   socket.emit("confirmation", "connected!");
 
-  socket.on("event", (data) => {
-    console.log(socket.id, data);
-    socket.emit("event", "pong");
+  socket.on("confirmation", (lastItemEventId) => {
+    console.log(socket.id, "confirmation")
+    /* TODO: send the events that happen after client initial load */
+  });
+
+  socket.on("disconnect", (reason) => {
+    console.log(socket.id, "disconnected", `reason: ${reason}`);
   });
 });
+
+app.locals.io = io;
 
 app.use(compression());
 app.disable("x-powered-by");
@@ -51,7 +57,7 @@ if (DEVELOPMENT) {
   app.use(async (req, res, next) => {
     try {
       const source = await viteDevServer.ssrLoadModule("./server/app.ts");
-      return await source.app(req, res, next);
+      return source.app(req, res, next);
     } catch (error) {
       if (typeof error === "object" && error instanceof Error) {
         viteDevServer.ssrFixStacktrace(error);
@@ -66,10 +72,9 @@ if (DEVELOPMENT) {
     express.static("build/client/assets", { immutable: true, maxAge: "1y" })
   );
   app.use(express.static("build/client", { maxAge: "1h" }));
+  app.use(morgan("tiny"));
   app.use(await import(BUILD_PATH).then((mod) => mod.app));
 }
-
-app.use(morgan("tiny"));
 
 httpServer.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

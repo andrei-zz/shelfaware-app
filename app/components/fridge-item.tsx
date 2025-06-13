@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router";
 import { DateTime } from "luxon";
-import { Tag } from "lucide-react";
+import { BadgeCheck, BadgeX, Tag } from "lucide-react";
 
 import type { getItem } from "~/actions/select.server";
 
@@ -61,33 +61,58 @@ export const FridgeItem = ({
           size="24"
         />
         <div className="w-full flex flex-col sm:flex-row items-start sm:items-center gap-x-0 gap-y-2 sm:gap-x-2 sm:gap-y-0">
-          <div className="flex flex-col w-full grow">
-            <div className="flex gap-x-2 items-center">
+          <div className="flex flex-col space-y-2 w-full grow">
+            <div className="inline align-middle leading-6">
               <span>{item.name}</span>
               {item.type?.name != null ? (
-                <Badge variant="outline">{item.type.name}</Badge>
+                <Badge variant="outline" className="ml-2 inline self-center">
+                  {item.type.name}
+                </Badge>
               ) : null}
             </div>
-            <span className="text-sm font-light">{item.description}</span>
-            {item.expireAt == null ? null : (
-              <span className="text-sm font-light">
-                {`Expire at: ${DateTime.fromMillis(
-                  item.expireAt
-                ).toLocaleString()}`}
-              </span>
-            )}
-            {item.currentWeight == null ? null : (
-              <span className="text-sm font-light">
-                Weight: {item.currentWeight} g
-              </span>
-            )}
+            <div className="flex flex-col w-full">
+              <span className="text-sm font-light">{item.description}</span>
+              {item.expireAt == null ? null : (
+                <span className="text-sm font-light">
+                  {`Expire at: ${DateTime.fromMillis(
+                    item.expireAt
+                  ).toLocaleString()}`}
+                </span>
+              )}
+              {item.currentWeight == null ? null : (
+                <span className="text-sm font-light">
+                  Weight: {item.currentWeight} g
+                </span>
+              )}
+            </div>
           </div>
-          {item.tag == null ? null : (
-            <div className="flex flex-col shrink-0 items-start sm:items-end">
-              <span className="text-sm font-light">
-                <Tag className="size-4 inline-block" /> {item.tag.name}
-              </span>
-              <span className="text-sm font-light">UID: {item.tag.uid}</span>
+          {item.tag == null || item.isPresent == null ? null : (
+            <div className="h-full flex flex-col justify-between">
+              {item.tag == null ? (
+                <div></div>
+              ) : (
+                <div className="flex flex-col shrink-0 items-start sm:items-end">
+                  <span className="text-sm font-light">
+                    <Tag className="size-4 inline-block" /> {item.tag.name}
+                  </span>
+                  <span className="text-sm font-light">
+                    UID: {item.tag.uid}
+                  </span>
+                </div>
+              )}
+              {item.isPresent == null ? null : (
+                <div className="flex flex-col shrink-0 items-start sm:items-end">
+                  {item.isPresent ? (
+                    <span className="text-sm font-light">
+                      <BadgeCheck className="size-4 inline-block" /> in fridge
+                    </span>
+                  ) : (
+                    <span className="text-sm font-light">
+                      <BadgeX className="size-4 inline-block" /> not in fridge
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

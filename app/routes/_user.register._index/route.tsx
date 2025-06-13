@@ -3,7 +3,7 @@ import type { Route } from "./+types/route";
 import { data, redirect, useFetcher } from "react-router";
 import { z } from "zod/v4";
 
-import { hashPassword, sessionStorage } from "~/actions/auth.server";
+import { hashString, sessionStorage } from "~/actions/auth.server";
 import { coerceFormData, parseWithDummy } from "~/actions/zod-utils";
 import { createUser, createUserSchema } from "~/actions/insert.server";
 import { uploadImage } from "~/actions/image.server";
@@ -102,7 +102,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   }
 
   try {
-    const passwordHash = await hashPassword(password);
+    const passwordHash = await hashString(password);
 
     const parsed = createUserSchema.parse({
       ...payload,

@@ -8,23 +8,25 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
-
-import "./app.css";
-import { TooltipProvider } from "~/components/ui/tooltip";
-import {
-  SidebarProvider,
-} from "~/components/ui/sidebar";
-import { Main } from "./components/main";
-import { Pre } from "./components/pre";
-import { Code } from "./components/code";
-import { themeSessionResolver } from "./sessions.server";
+import { io, type Socket } from "socket.io-client";
+import { useEffect, useState } from "react";
 import {
   ThemeProvider,
   PreventFlashOnWrongTheme,
   useTheme,
   Theme,
 } from "remix-themes";
+
+import { themeSessionResolver } from "./sessions.server";
+
+import "./app.css";
+import { SocketProvider } from "./sockets/client";
 import { cn } from "./lib/utils";
+import { TooltipProvider } from "~/components/ui/tooltip";
+import { SidebarProvider } from "~/components/ui/sidebar";
+import { Main } from "./components/main";
+import { Pre } from "./components/pre";
+import { Code } from "./components/code";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -87,15 +89,27 @@ const Providers = ({
   theme: Theme | null | undefined;
   children: React.ReactNode;
 }) => {
+  const [socket, setSocket] = useState<Socket>();
+
+  useEffect(() => {
+    const socket = io();
+    setSocket(socket);
+    return () => {
+      socket.close();
+    };
+  }, []);
+
   return (
-    <ThemeProvider
-      specifiedTheme={theme ?? Theme.DARK}
-      themeAction="/api/set-theme"
-    >
-      <TooltipProvider delayDuration={400} skipDelayDuration={300}>
-        <SidebarProvider>{children}</SidebarProvider>
-      </TooltipProvider>
-    </ThemeProvider>
+    <SocketProvider socket={socket}>
+      <ThemeProvider
+        specifiedTheme={theme ?? Theme.DARK}
+        themeAction="/api/set-theme"
+      >
+        <TooltipProvider delayDuration={400} skipDelayDuration={300}>
+          <SidebarProvider>{children}</SidebarProvider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </SocketProvider>
   );
 };
 

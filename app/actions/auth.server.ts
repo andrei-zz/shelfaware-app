@@ -3,9 +3,14 @@ import { Authenticator } from "remix-auth";
 import { FormStrategy } from "remix-auth-form";
 import argon2 from "argon2";
 
-import type { Resolved } from "~/lib/types";
+import { base64urlDecode } from "~/lib/auth/base64url";
+import { TokenStrategy } from "~/lib/auth/token-strategy";
 import type { users } from "~/database/schema";
-import { getRawUserByEmail } from "~/actions/select.server";
+import {
+  getRawApiKey,
+  getRawUser,
+  getRawUserByEmail,
+} from "~/actions/select.server";
 
 if (!process.env.SESSION_SECRET) {
   throw new Error("SESSION_SECRET is required");
@@ -15,9 +20,9 @@ if (!process.env.ARGON2_PEPPER) {
 }
 
 // Define your user type
-type User = Resolved<Omit<typeof users.$inferSelect, "passwordHash">>;
+type User = Omit<typeof users.$inferSelect, "passwordHash">;
 
-export const hashPassword = async (
+export const hashString = async (
   password: Parameters<typeof argon2.hash>[0],
   options?: Parameters<typeof argon2.hash>[1]
 ): Promise<string> =>
@@ -38,10 +43,6 @@ export const sessionStorage = createCookieSessionStorage({
     secure: process.env.NODE_ENV === "production",
   },
 });
-
-// Create an instance of the authenticator, pass a generic with what
-// strategies will return
-export const authenticator = new Authenticator<User>();
 
 // Your authentication logic (replace with your actual DB/API calls)
 const login = async (email: string, password: string): Promise<User> => {
@@ -65,14 +66,25 @@ export const authenticate = async (
   returnTo?: string,
   redirectTo?: string
 ): Promise<User> => {
-  let session = await sessionStorage.getSession(request.headers.get("cookie"));
-  let user = session.get("user");
-  if (user) return user;
+  const session = await sessionStorage.getSession(
+    request.headers.get("cookie")
+  );
+  const user = session.get("user");
+  if (user) {
+    return user;
+  }
+  if (request.headers.has("Authorization")) {
+    return authenticator.authenticate("api-key", request);
+  }
   if (returnTo) session.set("returnTo", returnTo);
   throw redirect(redirectTo ?? "/login", {
     headers: { "Set-Cookie": await sessionStorage.commitSession(session) },
   });
 };
+
+// Create an instance of the authenticator, pass a generic with what
+// strategies will return
+export const authenticator = new Authenticator<User>();
 
 // Tell the Authenticator to use the form strategy
 authenticator.use(
@@ -92,4 +104,32 @@ authenticator.use(
   // each strategy has a name and can be changed to use the same strategy
   // multiple times, especially useful for the OAuth2 strategy.
   "user-pass"
+);
+
+authenticator.use(
+  new TokenStrategy(async ({ token }) => {
+    // Verify credentials
+    const parts = token.split(":") ?? [];
+    if (parts.length < 2) {
+      throw new Error("Invalid API key");
+    }
+    const [apiKeyId, key] = parts;
+    if (/^-?\d+(\.\d+)?$/.test(apiKeyId)) {
+      throw new Error("API key id must be an integer");
+    }
+    const apiKey = await getRawApiKey(Number(apiKeyId));
+    const rawUser = await getRawUser(apiKey.userId);
+    const pass = await argon2.verify(apiKey.keyHash, base64urlDecode(key), {
+      secret: Buffer.from(process.env.ARGON2_PEPPER!),
+    });
+
+    // Return user data or throw an error
+    if (!pass) {
+      throw new Error("API key failed");
+    }
+
+    const { passwordHash, ...user } = rawUser;
+    return user;
+  }),
+  "api-key"
 );
