@@ -27,17 +27,17 @@ const io = new Server(httpServer);
 // from a client
 io.on("connection", (socket) => {
   // from this point you are on the WS connection with a specific client
-  console.log(socket.id, "connected");
+  console.log("socket.io ID:", socket.id, "connected");
 
   socket.emit("confirmation", "connected!");
 
   socket.on("confirmation", (lastItemEventId) => {
-    console.log(socket.id, "confirmation")
+    console.log("socket.io ID:", socket.id, "confirmation")
     /* TODO: send the events that happen after client initial load */
   });
 
   socket.on("disconnect", (reason) => {
-    console.log(socket.id, "disconnected", `reason: ${reason}`);
+    console.log("socket.io ID:", socket.id, "disconnected", `reason: ${reason}`);
   });
 });
 

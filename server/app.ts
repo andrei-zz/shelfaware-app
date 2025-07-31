@@ -1,20 +1,19 @@
 import "react-router";
 import { createRequestHandler } from "@react-router/express";
-import express from "express";
 import type { Server } from "socket.io";
 
 declare module "react-router" {
   interface AppLoadContext {
-    VALUE_FROM_EXPRESS: string;
-    io?: Server;
+    // VALUE_FROM_EXPRESS: string;
+    io: Server | undefined;
   }
 }
 
 export const app = createRequestHandler({
   build: () => import("virtual:react-router/server-build"),
-  getLoadContext(req, res) {
+  getLoadContext(req, __) {
     return {
-      VALUE_FROM_EXPRESS: "Hello from Express",
+      // VALUE_FROM_EXPRESS: "Hello from Express",
       io: req.app.locals.io,
     };
   },
